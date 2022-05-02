@@ -102,7 +102,7 @@ async def test_v2_download_pre_return_500_when_geid_not_found(
 async def test_v2_download_pre_return_200_when_approval_request_id(client, httpx_mock, metadata):
     httpx_mock.add_response(
         method='GET',
-        url='http://neo4j_service/v1/neo4j/nodes/geid/fake_geid',
+        url='http://NEO4J_SERVICE/v1/neo4j/nodes/geid/fake_geid',
         json=[
             {
                 'code': 'any_code',

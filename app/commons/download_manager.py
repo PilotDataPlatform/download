@@ -24,7 +24,7 @@ from typing import Set
 
 import aiofiles.os
 import httpx
-from logger import LoggerFactory
+from common import LoggerFactory
 from starlette.concurrency import run_in_threadpool
 
 from app.commons.locks import recursive_lock
@@ -124,6 +124,9 @@ class _DownloadClient:
         try:
             async with httpx.AsyncClient() as client:
                 res = await client.get(url)
+            print(url)
+            print(geid)
+            print(res.json())
             response = res.json()[0]
             if 'Folder' in response['labels']:
                 # Folder in file list

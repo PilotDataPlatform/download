@@ -18,7 +18,7 @@ import traceback
 from functools import wraps
 
 from httpx import Response
-from logger import LoggerFactory
+from common import LoggerFactory
 
 from app.models.base_models import APIResponse
 from app.models.base_models import EAPIResponseCode

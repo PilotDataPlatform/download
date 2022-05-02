@@ -22,7 +22,7 @@ from fastapi import Header
 from fastapi.responses import FileResponse
 from fastapi.responses import StreamingResponse
 from fastapi_utils import cbv
-from logger import LoggerFactory
+from common import LoggerFactory
 
 from app.commons.service_connection.minio_client import get_minio_client
 from app.config import ConfigClass

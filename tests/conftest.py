@@ -54,6 +54,8 @@ environ['MINIO_TEST_PASS'] = 'MINIO_TEST_PASS'
 environ['MINIO_ACCESS_KEY'] = 'MINIO_ACCESS_KEY'
 environ['MINIO_SECRET_KEY'] = 'MINIO_SECRET_KEY'
 environ['KEYCLOAK_MINIO_SECRET'] = 'KEYCLOAK_MINIO_SECRET'
+
+environ['REDIS_HOST'] = 'localhost'
 environ['REDIS_PORT'] = '6379'
 environ['REDIS_DB'] = '0'
 environ['REDIS_PASSWORD'] = ''
@@ -61,6 +63,8 @@ environ['REDIS_PASSWORD'] = ''
 environ['RDS_DB_URI'] = 'postgresql://postgres:postgres@127.0.0.1:5432/INDOC_TEST'
 environ['RDS_SCHEMA_DEFAULT'] = 'INDOC_TEST'
 environ['ROOT_PATH'] = './tests/'
+
+environ['OPEN_TELEMETRY_ENABLED'] = 'false'
 
 
 @pytest.fixture(scope='session')

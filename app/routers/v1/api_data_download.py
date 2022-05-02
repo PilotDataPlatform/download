@@ -18,7 +18,7 @@ import os
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from fastapi_utils import cbv
-from logger import LoggerFactory
+from common import LoggerFactory
 
 from app.config import ConfigClass
 from app.models.base_models import APIResponse

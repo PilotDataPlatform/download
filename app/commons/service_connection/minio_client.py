@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import httpx
-from logger import LoggerFactory
+from common import LoggerFactory
 from minio import Minio
 from minio.credentials.providers import ClientGrantsProvider
 from minio.error import S3Error

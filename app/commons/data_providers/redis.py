@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from aioredis import StrictRedis
-from logger import LoggerFactory
+from common import LoggerFactory
 
 from app.config import ConfigClass
 

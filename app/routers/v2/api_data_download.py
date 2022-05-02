@@ -23,7 +23,7 @@ from fastapi import Header
 from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
 from fastapi_utils import cbv
-from logger import LoggerFactory
+from common import LoggerFactory
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
 
