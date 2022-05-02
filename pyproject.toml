@@ -6,8 +6,6 @@ authors = []
 
 [tool.poetry.dependencies]
 python = "^3.7"
-common = "0.0.19"
-logger = "0.1.0"
 anyio = "3.4.0"
 fastapi = "0.62.0"
 fastapi-utils = "0.2.1"
@@ -35,6 +33,7 @@ httpx = "^0.22.0"
 aioredis = "^2.0.1"
 aiofiles = "^0.8.0"
 greenlet = "^1.1.2"
+pilot-platform-common = "^0.0.25"
 
 [tool.poetry.dev-dependencies]
 pytest = "6.2.5"
@@ -50,8 +49,3 @@ testcontainers = "^3.4.2"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[[tool.poetry.source]]
-name = "pilot"
-url = "https://git.indocresearch.org/api/v4/groups/pilot/-/packages/pypi/simple"
-default = true
