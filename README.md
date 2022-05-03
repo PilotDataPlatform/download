@@ -71,7 +71,7 @@ REST API documentation in the form of Swagger/OpenAPI can be found here: [Api Do
 
 ## Helm Charts
 
-Components of the Pilot Platform are available as helm charts for installation on Kubernetes: [Upload Service Helm Charts](https://github.com/PilotDataPlatform/helm-charts/tree/main/download-service)
+Components of the Pilot Platform are available as helm charts for installation on Kubernetes: [Download Service Helm Charts](https://github.com/PilotDataPlatform/helm-charts/tree/main/download-service)
 
 
 # Colaboration
