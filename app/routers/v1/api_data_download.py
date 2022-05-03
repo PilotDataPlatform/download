@@ -15,10 +15,10 @@
 
 import os
 
+from common import LoggerFactory
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from fastapi_utils import cbv
-from common import LoggerFactory
 
 from app.config import ConfigClass
 from app.models.base_models import APIResponse

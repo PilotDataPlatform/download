@@ -124,9 +124,6 @@ class _DownloadClient:
         try:
             async with httpx.AsyncClient() as client:
                 res = await client.get(url)
-            print(url)
-            print(geid)
-            print(res.json())
             response = res.json()[0]
             if 'Folder' in response['labels']:
                 # Folder in file list
