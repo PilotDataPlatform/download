@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     UTILITY_SERVICE: str
     DATA_OPS_UTIL: str
     DATASET_SERVICE: str
+    METADATA_SERVICE: str
 
     # minio
     MINIO_OPENID_CLIENT: str
@@ -105,6 +106,7 @@ class Settings(BaseSettings):
         self.DATA_OPS_UT_V2 = self.DATA_OPS_UTIL + '/v2/'
         self.DATA_OPS_UTIL += '/v1/'
         self.DATASET_SERVICE += '/v1/'
+        self.METADATA_SERVICE += '/v1/'
 
         # minio
         self.MINIO_TMP_PATH = self.ROOT_PATH + '/tmp/'

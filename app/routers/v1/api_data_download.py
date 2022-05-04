@@ -66,6 +66,7 @@ class APIDataDownload:
             return response.json_response()
         else:
             res_verify_token = res_verify_token[1]
+
         session_id = res_verify_token['session_id']
         job_id = res_verify_token['job_id']
         project_code = res_verify_token['project_code']

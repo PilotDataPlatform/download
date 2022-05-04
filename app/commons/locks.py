@@ -20,6 +20,10 @@ from app.resources.helpers import get_children_nodes
 from app.resources.helpers import get_resource_bygeid
 
 
+class ResourceAlreadyInUsed(Exception):
+    pass
+
+
 async def data_ops_request(resource_key: str, operation: str, method: str) -> dict:
     url = ConfigClass.DATA_OPS_UT_V2 + 'resource/lock/'
     post_json = {'resource_key': resource_key, 'operation': operation}
@@ -39,6 +43,22 @@ async def unlock_resource(resource_key: str, operation: str) -> dict:
     return await data_ops_request(resource_key, operation, 'DELETE')
 
 
+async def bulk_lock_operation(resource_key: list, operation: str, lock=True) -> dict:
+    # base on the flag toggle the http methods
+    method = 'POST' if lock else 'DELETE'
+
+    # operation can be either read or write
+    url = ConfigClass.DATA_OPS_UT_V2 + 'resource/lock/bulk'
+    post_json = {'resource_keys': resource_key, 'operation': operation}
+    async with httpx.AsyncClient() as client:
+        response = await client.request(method, url, json=post_json, timeout=3600)
+    if response.status_code != 200:
+        raise ResourceAlreadyInUsed('resource %s already in used' % resource_key)
+
+    return response.json()
+
+
+# should be deprecated
 async def recursive_lock(code: str, ff_geids: list, new_name: str = None) -> (list, Exception):
     """the function will recursively lock the node tree."""
 

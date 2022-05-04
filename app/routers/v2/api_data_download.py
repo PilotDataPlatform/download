@@ -81,6 +81,7 @@ class APIDataDownload:
             response.code = EAPIResponseCode.bad_request
             self.__logger.error(error_msg)
             return response.json_response()
+
         if data.project_code:
             object_code = data.project_code
             object_geid = ''
@@ -109,6 +110,7 @@ class APIDataDownload:
                 str(data.approval_request_id)
             )
             file_geids_to_include = set(request_approval_entities.keys())
+
         download_client = await create_download_client(
             data.files,
             minio_token,

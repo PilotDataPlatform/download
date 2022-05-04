@@ -27,8 +27,7 @@ import httpx
 from common import LoggerFactory
 from starlette.concurrency import run_in_threadpool
 
-from app.commons.locks import recursive_lock
-from app.commons.locks import unlock_resource
+from app.commons.locks import bulk_lock_operation
 from app.commons.service_connection.minio_client import Minio_Client
 from app.commons.service_connection.minio_client import get_minio_client
 from app.config import ConfigClass
@@ -36,7 +35,6 @@ from app.models.base_models import EAPIResponseCode
 from app.models.models_data_download import EDataDownloadStatus
 from app.resources.download_token_manager import generate_token
 from app.resources.error_handler import APIException
-from app.resources.helpers import get_files_recursive
 from app.resources.helpers import set_status
 
 
@@ -120,41 +118,52 @@ class _DownloadClient:
         )
 
     async def add_files_to_list(self, geid: str):
-        url = ConfigClass.NEO4J_SERVICE + f'nodes/geid/{geid}'
+        # url = ConfigClass.NEO4J_SERVICE + f'nodes/geid/{geid}'
+        url = ConfigClass.METADATA_SERVICE + f'item/{geid}/'
         try:
             async with httpx.AsyncClient() as client:
                 res = await client.get(url)
-            response = res.json()[0]
-            if 'Folder' in response['labels']:
-                # Folder in file list
-                self.logger.info(f'Getting folder from geid: {geid}')
-                file_list = await get_files_recursive(geid)
-                if len(file_list) > 0:
-                    self.contains_folder = True
-            else:
-                file_list = res.json()
 
+            response = res.json().get('result', {})
+            file_list = []
+            if 'folder' == response.get('type'):
+                self.logger.info(f'Getting folder from geid: {geid}')
+
+                payload = {
+                    'container_code': self.project_code,
+                    'zone': response.get('zone'),
+                    'recursive': True,
+                    'archived': False,
+                    'parent_path': response.get('parent_path') + '.' + response.get('name'),
+                    'owner': response.get('owner'),
+                }
+                url = ConfigClass.METADATA_SERVICE + 'items/search/'
+                async with httpx.AsyncClient() as client:
+                    res = await client.get(url, params=payload)
+
+                # only take the file for downloading
+                for x in res.json().get('result', []):
+                    if 'file' == x.get('type'):
+                        file_list.append(x)
+
+            else:
+                file_list = [response]
+
+            # this is to download from approval panel
+            # this operation will not happen with normal download together
             if self.file_geids_to_include is not None:
                 file_list = [file for file in file_list if file['global_entity_id'] in self.file_geids_to_include]
-            for file in file_list:
-                if file.get('archived', False):
-                    self.logger.info(f'file node archived skipped: {file}')
-                    continue
 
-                label = (
-                    ConfigClass.CORE_ZONE_LABEL
-                    if ConfigClass.CORE_ZONE_LABEL in file.get('labels', [])
-                    else ConfigClass.GREEN_ZONE_LABEL
-                )
+            for file in file_list:
                 self.files_to_zip.append(
                     {
-                        'label': label,
-                        'location': file['location'],
-                        'geid': file['global_entity_id'],
-                        'project_code': file.get('project_code', ''),
+                        'label': file.get('zone'),
+                        'location': file.get('storage', {}).get('location_uri'),
+                        'geid': file.get('id'),
+                        'project_code': file.get('container_code', ''),
                         'operator': self.operator,
-                        'parent_folder': file['global_entity_id'],
-                        'dataset_code': file.get('dataset_code', ''),
+                        # ?
+                        'dataset_code': file.get('container_code', ''),
                     }
                 )
         except Exception as e:
@@ -216,12 +225,16 @@ class _DownloadClient:
             raise
 
     async def zip_worker(self, hash_code):
-        locked_node = []
+        lock_keys = []
         try:
             # add the file lock
-            locked_node, err = await recursive_lock(self.project_code, self.files)
-            if err:
-                raise err
+            bucket_prefix = 'gr-' if ConfigClass.namespace == 'greenroom' else 'core-'
+            for nodes in self.files_to_zip:
+                bucket = bucket_prefix + nodes.get('project_code')
+                lock_keys.append('%s/%s/%s' % (bucket, nodes.get('parent_path'), nodes.get('name')))
+
+            await bulk_lock_operation(lock_keys, 'read')
+
             mc = await get_minio_client(self.auth_token['at'], self.auth_token['rt'])
             # download all file to tmp folder
             for obj in self.files_to_zip:
@@ -251,8 +264,7 @@ class _DownloadClient:
             await self.set_status(EDataDownloadStatus.CANCELLED.name, payload=payload)
         finally:
             self.logger.info('Start to unlock the nodes')
-            for resource_key, operation in locked_node:
-                await unlock_resource(resource_key, operation)
+            await bulk_lock_operation(lock_keys, 'read', lock=False)
         self.logger.info('BACKGROUND TASK DONE')
 
     async def update_activity_log(self, dataset_geid, source_entry, event_type):
