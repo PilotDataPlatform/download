@@ -23,6 +23,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
     echo $TZ > /etc/timezone
 COPY poetry.lock pyproject.toml ./
 RUN pip install --no-cache-dir poetry==1.1.12
+RUN poetry config virtualenvs.create false
 RUN poetry install --no-dev --no-root --no-interaction
 COPY . .
 RUN chmod +x gunicorn_starter.sh
