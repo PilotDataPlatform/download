@@ -125,6 +125,9 @@ class _DownloadClient:
                 res = await client.get(url)
 
             response = res.json().get('result', {})
+            if len(response) == 0 or res.status_code == EAPIResponseCode.not_found:
+                raise Exception('File %s does not exist' % geid)
+
             file_list = []
             if 'folder' == response.get('type'):
                 self.logger.info(f'Getting folder from geid: {geid}')
@@ -150,9 +153,8 @@ class _DownloadClient:
                 file_list = [response]
 
             # this is to download from approval panel
-            # this operation will not happen with normal download together
             if self.file_geids_to_include is not None:
-                file_list = [file for file in file_list if file['global_entity_id'] in self.file_geids_to_include]
+                file_list = [file for file in file_list if file['id'] in self.file_geids_to_include]
 
             for file in file_list:
                 self.files_to_zip.append(

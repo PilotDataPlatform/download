@@ -40,25 +40,25 @@ async def test_download_client_without_files_should_raise_exception(httpx_mock, 
 async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mock, mock_minio):
     httpx_mock.add_response(
         method='GET',
-        url='http://neo4j_service/v1/neo4j/nodes/geid/geid_1',
-        json=[
-            {
-                'labels': ['File'],
-                'global_entity_id': 'geid_2',
-                'location': 'http://anything.com/bucket/obj/path',
-                'display_path': 'display_path',
-                'uploader': 'test',
-                'archived': True,
-            },
-            {
-                'labels': ['File'],
-                'global_entity_id': 'geid_2',
-                'location': 'http://anything.com/bucket/obj/path',
-                'display_path': 'display_path',
-                'uploader': 'test',
-            },
-        ],
+        url='http://metadata_service/v1/item/geid_1/',
+        json={
+            'result': {
+                'code': 'any_code',
+                'labels': 'any_label',
+                'storage': {'location_uri': 'http://anything.com/bucket/obj/path'},
+                'id': 'geid_1',
+                'operator': 'me',
+                'parent_path': 'admin',
+                'type': 'file',
+                'container_code': 'fake_project_code',
+                'zone': 0,
+            }
+        },
     )
+
+    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+
     download_client = await create_download_client(
         files=[{'geid': 'geid_1'}],
         auth_token={'at': 'token', 'rt': 'refresh_token'},
@@ -72,22 +72,34 @@ async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mo
     fake_set.assert_called_once_with('READY_FOR_DOWNLOADING', payload={'hash_code': 'fake_hash'})
 
 
-async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock):
+async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
     httpx_mock.add_response(
         method='GET',
-        url='http://neo4j_service/v1/neo4j/nodes/geid/geid_1',
-        json=[
-            {
-                'labels': ['File'],
-                'global_entity_id': 'geid_2',
-                'location': 'http://anything.com/bucket/obj/path',
-                'display_path': 'display_path',
-                'uploader': 'test',
+        url='http://metadata_service/v1/item/geid_1/',
+        json={
+            'result': {
+                'code': 'any_code',
+                'labels': 'any_label',
+                'storage': {'location_uri': 'http://anything.com/bucket/obj/path'},
+                'id': 'geid_1',
+                'operator': 'me',
+                'parent_path': 'admin',
+                'type': 'file',
+                'container_code': 'fake_project_code',
+                'zone': 0,
             }
-        ],
+        },
     )
-    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/', status_code=200, json={})
-    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/', status_code=200, json={})
+
+    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    # mock the exception
+    m = mocker.patch(
+        'app.commons.locks.bulk_lock_operation',
+        return_value={},
+    )
+    m.side_effect = Exception
+
     download_client = await create_download_client(
         files=[{'geid': 'geid_1'}],
         auth_token='token',
@@ -123,19 +135,23 @@ async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock):
 async def test_zip_worker_raise_exception_when_minio_return_error(mock_minio, httpx_mock, exception_code, result):
     httpx_mock.add_response(
         method='GET',
-        url='http://neo4j_service/v1/neo4j/nodes/geid/geid_1',
-        json=[
-            {
-                'labels': ['File'],
-                'global_entity_id': 'geid_2',
-                'location': 'http://anything.com/bucket/obj/path',
-                'display_path': 'display_path',
-                'uploader': 'test',
+        url='http://metadata_service/v1/item/geid_1/',
+        json={
+            'result': {
+                'code': 'any_code',
+                'labels': 'any_label',
+                'storage': {'location_uri': 'http://anything.com/bucket/obj/path'},
+                'id': 'geid_1',
+                'operator': 'me',
+                'parent_path': 'admin',
+                'type': 'file',
+                'container_code': 'fake_project_code',
+                'zone': 0,
             }
-        ],
+        },
     )
-    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/', status_code=200, json={})
-    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/', status_code=200, json={})
+    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', status_code=200, json={})
+    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', status_code=200, json={})
     minio_exception = minio.error.S3Error(
         code=exception_code, message='any msg', resource='any', request_id='any', host_id='any', response='error'
     )
@@ -157,16 +173,20 @@ async def test_zip_worker_raise_exception_when_minio_return_error(mock_minio, ht
 async def test_zip_worker_full_dataset_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mock, mock_minio):
     httpx_mock.add_response(
         method='GET',
-        url='http://neo4j_service/v1/neo4j/nodes/geid/geid_1',
-        json=[
-            {
-                'labels': ['File'],
-                'global_entity_id': 'geid_2',
-                'location': 'http://anything.com/bucket/obj/path',
-                'display_path': 'display_path',
-                'uploader': 'test',
+        url='http://metadata_service/v1/item/geid_1/',
+        json={
+            'result': {
+                'code': 'any_code',
+                'labels': 'any_label',
+                'storage': {'location_uri': 'http://anything.com/bucket/obj/path'},
+                'id': 'geid_1',
+                'operator': 'me',
+                'parent_path': 'admin',
+                'type': 'file',
+                'container_code': 'fake_project_code',
+                'zone': 0,
             }
-        ],
+        },
     )
     httpx_mock.add_response(
         method='POST',
@@ -174,8 +194,8 @@ async def test_zip_worker_full_dataset_set_status_READY_FOR_DOWNLOADING_when_suc
         status_code=200,
         json={'result': [{'name': 'name', 'content': 'content'}]},
     )
-    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/', status_code=200, json={})
-    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/', status_code=200, json={})
+    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', status_code=200, json={})
+    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', status_code=200, json={})
     download_client = await create_download_client(
         files=[{'geid': 'geid_1'}],
         auth_token={'at': 'token', 'rt': 'refresh_token'},

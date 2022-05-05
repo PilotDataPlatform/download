@@ -34,6 +34,7 @@ aioredis = "^2.0.1"
 aiofiles = "^0.8.0"
 greenlet = "^1.1.2"
 pilot-platform-common = "^0.0.25"
+pytest-mock = "^3.7.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "6.2.5"
