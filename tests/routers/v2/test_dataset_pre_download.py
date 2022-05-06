@@ -82,23 +82,27 @@ async def test_v2_dataset_download_pre_return_200_when_success(
             }
         ],
     )
+
     httpx_mock.add_response(
         method='GET',
-        url='http://neo4j_service/v1/neo4j/nodes/geid/fake_geid',
-        json=[
-            {
+        url='http://metadata_service/v1/item/fake_geid/',
+        json={
+            'result': {
                 'code': 'any_code',
-                'labels': ['File'],
-                'location': 'http://anything.com/bucket/obj/path',
-                'global_entity_id': 'fake_geid',
-                'project_code': '',
+                'labels': 'any_label',
+                'storage': {'location_uri': 'http://anything.com/bucket/obj/path'},
+                'id': 'fake_geid',
                 'operator': 'me',
-                'parent_folder': '',
-                'dataset_code': 'fake_dataset_code',
+                'parent_path': 'admin',
+                'type': 'file',
+                'container_code': 'fake_project_code',
+                'zone': 0,
             }
-        ],
+        },
     )
 
+    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
     httpx_mock.add_response(
         method='POST',
         url='http://queue_service/v1/broker/pub',
@@ -149,6 +153,10 @@ async def test_v2_dataset_download_pre_empty_dataset_return_200_when_success(
             }
         ],
     )
+
+    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+
     httpx_mock.add_response(
         method='POST',
         url='http://queue_service/v1/broker/pub',

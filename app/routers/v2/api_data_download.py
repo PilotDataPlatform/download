@@ -99,6 +99,8 @@ class APIDataDownload:
             dataset = res.json()
             object_code = dataset[0]['code']
 
+        # the special requirement to download the file from a set of
+        # approval files. Fetch files from Postgres by approval id
         file_geids_to_include = None
         if data.approval_request_id:
             engine = create_async_engine(ConfigClass.RDS_DB_URI)
