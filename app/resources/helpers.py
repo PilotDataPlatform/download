@@ -17,40 +17,56 @@ import json
 import os
 import time
 from typing import List
+from uuid import UUID
 
 import httpx
 
 from app.commons.data_providers.redis import SrvRedisSingleton
 from app.config import ConfigClass
+from app.models.base_models import EAPIResponseCode
 
 from .error_handler import internal_jsonrespon_handler
 
 
-async def get_files_recursive(folder_geid):
-    all_files = []
+async def get_files_folder_recursive(
+    container_code: str, container_type: str, zone: int, parent_path: str, owner: str
+) -> List[dict]:
 
-    query = {
-        'start_label': 'Folder',
-        'end_labels': ['File', 'Folder'],
-        'query': {
-            'start_params': {
-                'global_entity_id': folder_geid,
-            },
-            'end_params': {
-                'archived': False,
-            },
-        },
+    payload = {
+        'container_code': container_code,
+        'container_type': container_type,
+        'zone': zone,
+        'recursive': True,
+        'archived': False,
+        'parent_path': parent_path,
+        'owner': owner,
     }
+    url = ConfigClass.METADATA_SERVICE + 'items/search/'
     async with httpx.AsyncClient() as client:
-        resp = await client.post(ConfigClass.NEO4J_SERVICE_V2 + 'relations/query', json=query)
-    for node in resp.json()['results']:
-        if 'File' in node['labels']:
-            all_files.append(node)
-        else:
-            all_files += await get_files_recursive(node['global_entity_id'])
-    return all_files
+        res = await client.get(url, params=payload)
+        if res.status_code != 200:
+            raise Exception('Error when query the folder tree %s' % (str(res.text)))
+
+    return res.json().get('result', [])
 
 
+async def get_files_folder_by_id(_id: UUID) -> dict:
+
+    url = ConfigClass.METADATA_SERVICE + f'item/{_id}/'
+    async with httpx.AsyncClient() as client:
+        res = await client.get(url)
+    file_folder_object = res.json().get('result', {})
+
+    # raise not found if the resource not exist
+    if len(file_folder_object) == 0 or res.status_code == EAPIResponseCode.not_found:
+        raise Exception('resource %s does not exist' % _id)
+    elif res.status_code != 200:
+        raise Exception('Error when get resource: %s' % res.text)
+
+    return file_folder_object
+
+
+# should be deprecated
 async def get_children_nodes(start_geid: str) -> list:
     """The function is different than above one this one will return next layer folder or files under the start_geid."""
 
@@ -68,6 +84,7 @@ async def get_children_nodes(start_geid: str) -> list:
     return ffs
 
 
+# should be deprecated
 async def get_resource_bygeid(geid) -> dict:
     """function will call the neo4j api to get the node by geid.
 
@@ -135,7 +152,7 @@ async def update_file_operation_logs(operator, download_path, project_code, oper
     """Endpoint."""
     # new audit log api
     url_audit_log = ConfigClass.PROVENANCE_SERVICE + 'audit-logs'
-    payload_audit_log = {
+    payload = {
         'action': operation_type,
         'operator': operator,
         'target': download_path,
@@ -146,5 +163,5 @@ async def update_file_operation_logs(operator, download_path, project_code, oper
         'extra': extra if extra else {},
     }
     async with httpx.AsyncClient() as client:
-        res_audit_logs = await client.post(url_audit_log, json=payload_audit_log)
+        res_audit_logs = await client.post(url_audit_log, json=payload)
     return internal_jsonrespon_handler(url_audit_log, res_audit_logs)

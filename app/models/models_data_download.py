@@ -32,10 +32,8 @@ class PreDataDownloadPOST(BaseModel):
 
     files: List[Dict[str, Any]]
     operator: str
-    session_id: str
-    project_code: str = ''
-    dataset_geid: str = ''
-    dataset_description: bool = False
+    container_code: str
+    container_type: str
     approval_request_id: Optional[UUID]
 
 

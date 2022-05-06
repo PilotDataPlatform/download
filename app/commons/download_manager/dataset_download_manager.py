@@ -42,26 +42,24 @@ async def create_download_client(
     files: List[Dict[str, Any]],
     auth_token: Dict[str, Any],
     operator: str,
-    project_code: str,
-    geid: str,
+    container_code: str,
+    container_type: str,
     session_id: str,
-    download_type: str = 'project',
     file_geids_to_include: Optional[Set[str]] = None,
 ):
     download_client = _DownloadClient(
         files=files,
         auth_token=auth_token,
         operator=operator,
-        project_code=project_code,
-        geid=geid,
+        container_code=container_code,
+        container_type=container_type,
         session_id=session_id,
-        download_type=download_type,
         file_geids_to_include=file_geids_to_include,
     )
     for file in files:
         await download_client.add_files_to_list(file['geid'])
 
-    if len(download_client.files_to_zip) < 1 and download_client.download_type != 'full_dataset':
+    if len(download_client.files_to_zip) < 1 and container_type == 'project':
         error_msg = '[Invalid file amount] must greater than 0'
         download_client.logger.error(error_msg)
         raise APIException(status_code=EAPIResponseCode.bad_request.value, error_msg=error_msg)
@@ -74,51 +72,46 @@ class _DownloadClient:
         files: List[Dict[str, Any]],
         auth_token: Dict[str, Any],
         operator: str,
-        project_code: str,
-        geid: str,
+        container_code: str,
+        container_type: str,
         session_id: str,
-        download_type: str = 'project',
         file_geids_to_include: Optional[Set[str]] = None,
     ):
         self.job_id = 'data-download-' + str(int(time.time()))
         self.job_status = EDataDownloadStatus.INIT
         self.files = files
-        self.file_nodes = []
         self.files_to_zip = []
         self.operator = operator
-        self.project_code = project_code
-        self.tmp_folder = ConfigClass.MINIO_TMP_PATH + project_code + '_' + str(time.time())
+        self.container_code = container_code
+        self.tmp_folder = ConfigClass.MINIO_TMP_PATH + container_type + container_code + '_' + str(time.time())
         self.result_file_name = ''
         self.auth_token = auth_token
         self.session_id = session_id
-        self.download_type = download_type
+        self.container_type = container_type
         self.file_geids_to_include = file_geids_to_include
-        self.geid = geid
-        self.contains_folder = True if self.download_type == 'full_dataset' else False
+
         self.logger = LoggerFactory('api_data_download').get_logger()
 
-    async def set_status(self, status, payload):
+    async def set_status(self, status: EDataDownloadStatus, payload: dict):
         # pick up the first file for the metadata setup
         if len(self.files_to_zip) > 0:
             download_file = self.files_to_zip[0]
-            geid = download_file.get('geid')
-            payload.update({'zone': download_file.get('label')})
-        else:
-            geid = self.geid
+            file_id = download_file.get('id')
+            payload.update({'zone': download_file.get('zone')})
+
         return await set_status(
             self.session_id,
             self.job_id,
             self.result_file_name,
             'data_download',
             status,
-            self.project_code,
+            self.container_code,
             self.operator,
-            geid,
+            file_id,
             payload=payload,
         )
 
     async def add_files_to_list(self, geid: str):
-        # url = ConfigClass.NEO4J_SERVICE + f'nodes/geid/{geid}'
         url = ConfigClass.METADATA_SERVICE + f'item/{geid}/'
         try:
             async with httpx.AsyncClient() as client:
@@ -133,7 +126,8 @@ class _DownloadClient:
                 self.logger.info(f'Getting folder from geid: {geid}')
 
                 payload = {
-                    'container_code': self.project_code,
+                    'container_code': self.container_code,
+                    'container_type': self.container_type,
                     'zone': response.get('zone'),
                     'recursive': True,
                     'archived': False,
@@ -173,7 +167,7 @@ class _DownloadClient:
             raise
 
     def generate_hash_code(self):
-        if len(self.files_to_zip) > 1 or self.contains_folder:
+        if len(self.files_to_zip) > 1:
             self.result_file_name = self.tmp_folder + '.zip'
         else:
             location = self.files_to_zip[0]['location']
@@ -188,7 +182,7 @@ class _DownloadClient:
                 'operator': self.operator,
                 'session_id': self.session_id,
                 'job_id': self.job_id,
-                'project_code': self.project_code,
+                'project_code': self.container_code,
                 'iat': int(time.time()),
                 'exp': int(time.time()) + (ConfigClass.DOWNLOAD_TOKEN_EXPIRE_AT * 60),
             }
@@ -246,7 +240,7 @@ class _DownloadClient:
             if self.download_type == 'full_dataset':
                 await self.add_schemas(self.geid)
 
-            if len(self.files_to_zip) > 1 or self.contains_folder:
+            if len(self.files_to_zip) > 1:
                 self.logger.info('Start to ZIP files')
                 await run_in_threadpool(shutil.make_archive, self.tmp_folder, 'zip', self.tmp_folder)
                 self.logger.info('ZIP File created')

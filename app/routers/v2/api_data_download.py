@@ -27,7 +27,9 @@ from fastapi_utils import cbv
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.commons.download_manager import create_download_client
+from app.commons.download_manager.file_download_manager import (
+    create_file_download_client,
+)
 from app.commons.service_connection.minio_client import get_minio_client
 from app.config import ConfigClass
 from app.models.base_models import APIResponse
@@ -67,37 +69,16 @@ class APIDataDownload:
         background_tasks: BackgroundTasks,
         authorization: Optional[str] = Header(None),
         refresh_token: Optional[str] = Header(None),
-        # settings: Settings = Depends(get_settings),
+        session_id: Optional[str] = Header(None),
     ) -> JSONResponse:
+
         response = APIResponse()
         minio_token = {
             'at': authorization,
             'rt': refresh_token,
         }
-        # Determine whether it is project files download or dataset single file download
-        if not data.project_code and not data.dataset_geid:
-            error_msg = 'project_code or dataset_geid required'
-            response.error_msg = error_msg
-            response.code = EAPIResponseCode.bad_request
-            self.__logger.error(error_msg)
-            return response.json_response()
 
-        if data.project_code:
-            object_code = data.project_code
-            object_geid = ''
-            download_type = 'project_files'
-        else:
-            object_geid = data.dataset_geid
-            download_type = 'dataset_files'
-            async with httpx.AsyncClient() as client:
-                res = await client.get(ConfigClass.NEO4J_SERVICE + 'nodes/geid/' + data.dataset_geid)
-                if res.status_code != 200:
-                    error_msg = 'Get dataset code error {}: {}'.format(res.status_code, res.text)
-                    response.error_msg = error_msg
-                    response.code = EAPIResponseCode.internal_error
-                    return response.json_response()
-            dataset = res.json()
-            object_code = dataset[0]['code']
+        # todo somehow check the container exist
 
         # the special requirement to download the file from a set of
         # approval files. Fetch files from Postgres by approval id
@@ -107,30 +88,34 @@ class APIDataDownload:
             metadata = MetaData(schema=ConfigClass.RDS_SCHEMA_DEFAULT)
             async with engine.connect() as conn:
                 await conn.run_sync(metadata.reflect, only=['approval_entity'])
+
+            # get the set of approved files
             approval_service_client = ApprovalServiceClient(engine, metadata)
             request_approval_entities = await approval_service_client.get_approval_entities(
                 str(data.approval_request_id)
             )
             file_geids_to_include = set(request_approval_entities.keys())
 
-        download_client = await create_download_client(
+        download_client = await create_file_download_client(
             data.files,
             minio_token,
             data.operator,
-            object_code,
-            object_geid,
-            data.session_id,
-            download_type,
+            data.container_code,
+            data.container_type,
+            session_id,
             file_geids_to_include,
         )
         hash_code = download_client.generate_hash_code()
         status_result = await download_client.set_status(
             EDataDownloadStatus.ZIPPING.name, payload={'hash_code': hash_code}
         )
-        download_client.logger.info(f'Starting background job for: {data.project_code} {download_client.files_to_zip}')
+        download_client.logger.info(
+            f'Starting background job for: {data.container_code} {download_client.files_to_zip}'
+        )
 
         # start the background job for the zipping
         background_tasks.add_task(download_client.zip_worker, hash_code)
+
         response.result = status_result
         response.code = EAPIResponseCode.success
         return response.json_response()
@@ -186,7 +171,7 @@ class APIDataDownload:
                 }
             )
 
-        download_client = await create_download_client(
+        download_client = await create_file_download_client(
             files,
             minio_token,
             data.operator,
