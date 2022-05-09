@@ -21,6 +21,7 @@ from typing import List
 from typing import Optional
 from typing import Set
 
+import httpx
 from common import LoggerFactory
 from starlette.concurrency import run_in_threadpool
 
@@ -94,9 +95,13 @@ class FileDownloadClient:
 
     async def set_status(self, status: EDataDownloadStatus, payload: dict):
         # pick up the first file for the metadata setup
-        download_file = self.files_to_zip[0]
-        file_id = download_file.get('id')
-        payload.update({'zone': download_file.get('zone')})
+
+        if len(self.files_to_zip) == 1:
+            download_file = self.files_to_zip[0]
+            file_id = download_file.get('id')
+            payload.update({'zone': download_file.get('zone')})
+        else:
+            file_id = None
 
         return await set_status(
             self.session_id,
@@ -120,9 +125,9 @@ class FileDownloadClient:
             folder_tree = await get_files_folder_recursive(
                 self.container_code,
                 self.container_type,
+                ff_object.get('owner'),
                 ff_object.get('zone'),
                 ff_object.get('parent_path') + '.' + ff_object.get('name'),
-                ff_object.get('owner'),
             )
             # only take the file for downloading
             for x in folder_tree:
@@ -143,30 +148,23 @@ class FileDownloadClient:
 
         return None
 
-    def generate_hash_code(self) -> str:
+    async def generate_hash_code(self) -> str:
         if len(self.files_to_zip) > 1:
             self.result_file_name = self.tmp_folder + '.zip'
         else:
             location = self.files_to_zip[0]['location']
             self.result_file_name = self.tmp_folder + '/' + Minio_Client.parse_minio_location(location)[1]
 
-        _id = self.files_to_zip[0]['id'] if len(self.files_to_zip) > 0 else self.geid
-
-        return generate_token(
-            {
-                'geid': _id,
-                'full_path': self.result_file_name,
-                'issuer': 'SERVICE DATA DOWNLOAD',
-                'operator': self.operator,
-                'session_id': self.session_id,
-                'job_id': self.job_id,
-                'project_code': self.container_code,
-                'iat': int(time.time()),
-                'exp': int(time.time()) + (ConfigClass.DOWNLOAD_TOKEN_EXPIRE_AT * 60),
-            }
+        return await generate_token(
+            self.container_code,
+            self.container_type,
+            self.result_file_name,
+            self.operator,
+            self.session_id,
+            self.job_id,
         )
 
-    async def zip_worker(self, hash_code: str) -> None:
+    async def _file_download_worker(self, hash_code: str) -> None:
         lock_keys = []
         try:
             # add the file lock
@@ -187,11 +185,14 @@ class FileDownloadClient:
                 await mc.fget_object(obj, self.tmp_folder)
                 self.logger.info(f'File downloaded: {str(obj)}')
 
-            # zip the files under the tmp folder if we have number > 1
-            if len(self.files_to_zip) > 1:
-                self.logger.info('Start to ZIP files')
-                await run_in_threadpool(shutil.make_archive, self.tmp_folder, 'zip', self.tmp_folder)
-                self.logger.info('ZIP File created')
+            # # TEST ONLY
+            # print(self.tmp_folder)
+            # import os
+            # os.mkdir(self.tmp_folder)
+            # file_loc = self.tmp_folder + '/readme.txt'
+            # print(file_loc)
+            # with open(file_loc, 'w') as f:
+            #     f.write('Create a new text file!')
 
             await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING.name, payload={'hash_code': hash_code})
         except Exception as e:
@@ -203,5 +204,62 @@ class FileDownloadClient:
             await bulk_lock_operation(lock_keys, 'read', lock=False)
 
         self.logger.info('BACKGROUND TASK DONE')
+
+        return None
+
+    async def update_activity_log(self, dataset_geid, source_entry, event_type):
+        url = ConfigClass.QUEUE_SERVICE + 'broker/pub'
+        post_json = {
+            'event_type': event_type,
+            'payload': {
+                'dataset_geid': dataset_geid,
+                'operator': self.operator,
+                'action': 'DOWNLOAD',
+                'resource': 'Dataset',
+                'detail': {'source': source_entry},
+            },
+            'queue': 'dataset_actlog',
+            'routing_key': '',
+            'exchange': {'name': 'DATASET_ACTS', 'type': 'fanout'},
+        }
+        async with httpx.AsyncClient() as client:
+            res = await client.post(url, json=post_json)
+        if res.status_code != 200:
+            error_msg = 'update_activity_log {}: {}'.format(res.status_code, res.text)
+            self.logger.error(error_msg)
+            raise Exception(error_msg)
+        return res
+
+    async def _zip_worker(self):
+
+        self.logger.info('Start to ZIP files')
+        await run_in_threadpool(shutil.make_archive, self.tmp_folder, 'zip', self.tmp_folder)
+
+        return None
+
+    async def background_worker(self, hash_code: str) -> None:
+
+        await self._file_download_worker(hash_code)
+
+        # zip the files under the tmp folder if we have number > 1
+        if len(self.files_to_zip) > 1:
+            await self._zip_worker()
+
+        # add the activity logs
+        if self.container_type == 'dataset':
+
+            # REMOVE THIS AFTER MIGRATION
+            payload = {'code': self.container_code}
+            node_query_url = ConfigClass.NEO4J_SERVICE + 'nodes/Dataset/query'
+            with httpx.Client() as client:
+                response = client.post(node_query_url, json=payload)
+            dataset_geid = response.json()[0].get('global_entity_id')
+
+            filenames = ['/'.join(i['location'].split('/')[7:]) for i in self.files_to_zip]
+            await self.update_activity_log(
+                dataset_geid,
+                filenames,
+                'DATASET_FILEDOWNLOAD_SUCCEED',
+            )
 
         return None

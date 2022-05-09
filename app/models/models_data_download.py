@@ -22,7 +22,6 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from pydantic import Field
-from pydantic.types import constr
 
 from .base_models import APIResponse
 
@@ -40,7 +39,7 @@ class PreDataDownloadPOST(BaseModel):
 class DatasetPrePOST(BaseModel):
     """Pre download dataset payload model."""
 
-    dataset_geid: constr(min_length=2)
+    dataset_code: str
     operator: str
     session_id: str
 

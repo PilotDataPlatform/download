@@ -16,7 +16,6 @@
 from typing import Optional
 from typing import Union
 
-import httpx
 from common import LoggerFactory
 from fastapi import APIRouter
 from fastapi import BackgroundTasks
@@ -27,6 +26,9 @@ from fastapi_utils import cbv
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.commons.download_manager.dataset_download_manager import (
+    create_dataset_download_client,
+)
 from app.commons.download_manager.file_download_manager import (
     create_file_download_client,
 )
@@ -105,16 +107,17 @@ class APIDataDownload:
             session_id,
             file_geids_to_include,
         )
-        hash_code = download_client.generate_hash_code()
+        hash_code = await download_client.generate_hash_code()
         status_result = await download_client.set_status(
             EDataDownloadStatus.ZIPPING.name, payload={'hash_code': hash_code}
         )
         download_client.logger.info(
-            f'Starting background job for: {data.container_code} {download_client.files_to_zip}'
+            f'Starting background job for: {data.container_code}.'
+            f'number of files {len(download_client.files_to_zip)}'
         )
 
         # start the background job for the zipping
-        background_tasks.add_task(download_client.zip_worker, hash_code)
+        background_tasks.add_task(download_client.background_worker, hash_code)
 
         response.result = status_result
         response.code = EAPIResponseCode.success
@@ -137,60 +140,52 @@ class APIDataDownload:
             'rt': refresh_token,
         }
 
-        query = {
-            'start_label': 'Dataset',
-            'end_labels': ['File', 'Folder'],
-            'query': {
-                'start_params': {
-                    'global_entity_id': data.dataset_geid,
-                },
-                'end_params': {
-                    'archived': False,
-                },
-            },
-        }
+        # query = {
+        #     'start_label': 'Dataset',
+        #     'end_labels': ['File', 'Folder'],
+        #     'query': {
+        #         'start_params': {
+        #             'global_entity_id': data.dataset_geid,
+        #         },
+        #         'end_params': {
+        #             'archived': False,
+        #         },
+        #     },
+        # }
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(ConfigClass.NEO4J_SERVICE_V2 + 'relations/query', json=query)
-            res = await client.get(ConfigClass.NEO4J_SERVICE + 'nodes/geid/' + data.dataset_geid)
-            if resp.status_code != 200 or res.status_code != 200:
-                error_msg = 'Error when getting node for neo4j'
-                api_response.error_msg = error_msg
-                api_response.code = EAPIResponseCode.internal_error
-                return api_response.json_response()
+        # async with httpx.AsyncClient() as client:
+        #     resp = await client.post(ConfigClass.NEO4J_SERVICE_V2 + 'relations/query', json=query)
+        #     res = await client.get(ConfigClass.NEO4J_SERVICE + 'nodes/geid/' + data.dataset_geid)
+        #     if resp.status_code != 200 or res.status_code != 200:
+        #         error_msg = 'Error when getting node for neo4j'
+        #         api_response.error_msg = error_msg
+        #         api_response.code = EAPIResponseCode.internal_error
+        #         return api_response.json_response()
 
-            nodes = resp.json()['results']
-            dataset = res.json()
-            dataset_code = dataset[0]['code']
+        #     nodes = resp.json()['results']
+        #     dataset = res.json()
+        #     dataset_code = dataset[0]['code']
 
-        files = []
-        for node in nodes:
-            files.append(
-                {
-                    'geid': node['global_entity_id'],
-                }
-            )
+        # files = []
+        # for node in nodes:
+        #     files.append({'geid': node['global_entity_id']})
 
-        download_client = await create_file_download_client(
-            files,
+        download_client = await create_dataset_download_client(
             minio_token,
             data.operator,
-            dataset_code,
-            data.dataset_geid,
+            data.dataset_code,
+            'dataset',
             data.session_id,
-            download_type='full_dataset',
         )
-        hash_code = download_client.generate_hash_code()
+        hash_code = await download_client.generate_hash_code()
         status_result = await download_client.set_status(
             EDataDownloadStatus.ZIPPING.name, payload={'hash_code': hash_code}
         )
-        download_client.logger.info(f'Starting background job for: {dataset_code} {download_client.files_to_zip}')
-        background_tasks.add_task(download_client.zip_worker, hash_code)
-        await download_client.update_activity_log(
-            data.dataset_geid,
-            data.dataset_geid,
-            'DATASET_DOWNLOAD_SUCCEED',
+        download_client.logger.info(
+            f'Starting background job for: {data.dataset_code}.' f'number of files {len(download_client.files_to_zip)}'
         )
+        background_tasks.add_task(download_client.background_worker, hash_code)
+
         api_response.result = status_result
         api_response.code = EAPIResponseCode.success
         return api_response.json_response()
@@ -202,12 +197,21 @@ class APIDataDownload:
         authorization: Optional[str] = Header(None),
         refresh_token: Optional[str] = Header(None),
     ) -> Union[StreamingResponse, JSONResponse]:
-        """Download a specific version of a dataset given a hash_code Please note here, this hash code api is different
-        with other async download this one will use the minio client to fetch the file and directly send to frontend.
-        and in /dataset/download/pre it will ONLY take the hashcode.
 
-        Other api like project files will use the /pre to download from minio and zip.
-        """
+        '''
+        Summary:
+            This api is different with others. This is for dataset version download. The reason
+            is the dataset version is not save as file node instead it has a seperate table to
+            keep track the version. And this version is already zipped.
+
+            The hashcode is generated by dataset service. The code will contains the minio location
+            for this api to download directly from minio.
+        Parameter:
+            - hash_code(string): the HS256 generate by dataset service
+
+        Return:
+            - dict: the hash code
+        '''
 
         api_response = APIResponse()
         valid, result = verify_dataset_version_token(hash_code)
@@ -219,11 +223,9 @@ class APIDataDownload:
         minio_path = result['location'].split('//')[-1]
         _, bucket, file_path = tuple(minio_path.split('/', 2))
         filename = file_path.split('/')[-1]
-        self.__logger.info(str(authorization))
-        self.__logger.info(str(refresh_token))
 
         try:
-            mc = await get_minio_client()
+            mc = await get_minio_client(authorization, refresh_token)
             result = await mc.stat_object(bucket, file_path)
             headers = {'Content-Length': str(result.size), 'Content-Disposition': f'attachment; filename={filename}'}
             response = await mc.get_object(bucket, file_path)

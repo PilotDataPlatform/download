@@ -29,7 +29,7 @@ from .error_handler import internal_jsonrespon_handler
 
 
 async def get_files_folder_recursive(
-    container_code: str, container_type: str, zone: int, parent_path: str, owner: str
+    container_code: str, container_type: str, owner: str, zone: int = 0, parent_path: str = ''
 ) -> List[dict]:
 
     payload = {
