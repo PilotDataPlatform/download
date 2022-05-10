@@ -81,7 +81,7 @@ class APIDataDownload:
 
         if len(job_fatched):
             response.code = EAPIResponseCode.success
-            response.result = job_fatched
+            response.result = job_fatched[0]
         else:
             self.__logger.error(f'Status not found {res_verify_token} in namespace {ConfigClass.namespace}')
             response.code = EAPIResponseCode.not_found

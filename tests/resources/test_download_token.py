@@ -33,7 +33,7 @@ async def test_token_flow():
 
     container_code = 'test_container'
     container_type = 'test_type'
-    file_path = 'test/folder/file'
+    file_path = 'tests/routers/v1/empty.txt'
     operator = 'test_user'
     session_id = 'test_session_id'
     job_id = 'test_job_id'
@@ -90,6 +90,30 @@ async def test_token_invalid():
         'exp': int(time.time()) + 100,
     }
 
+    hash_code = jwt.encode(hash_token_dict, key='test_key', algorithm='HS256').decode('utf-8')
+
+    try:
+        verify_download_token(hash_code)
+    except Exception as e:
+        assert type(e) == InvalidToken
+
+
+@pytest.mark.asyncio
+async def test_token_wrong_key():
+    hash_token_dict = {
+        'file_path': 'test/folder/file',  # <<here we have path
+        'issuer': 'SERVICE DATA DOWNLOAD',
+        'operator': 'test_user',
+        'session_id': 'test_session_id',
+        'job_id': 'test_job_id',
+        'container_code': 'test_container',
+        'container_type': 'test_type',
+        'payload': {},
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 100,
+    }
+
+    # but verified with wrong key
     hash_code = jwt.encode(hash_token_dict, key='test_key', algorithm='HS256').decode('utf-8')
 
     try:

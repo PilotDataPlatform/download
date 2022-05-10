@@ -140,13 +140,15 @@ def mock_settings(monkeypatch):
 @pytest.fixture
 def jwt_token():
     return (
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OD'
-        'kwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJmdWxsX3Bh'
-        'dGgiOiJ0ZXN0cy9yb3V0ZXJzL3YxL2VtcHR5LnR4dCIsInNlc3Npb25faWQiOj'
-        'EyMywiam9iX2lkIjoiZmFrZV9nbG9iYWxfZW50aXR5X2lkIiwicHJvamVjdF9j'
-        'b2RlIjoiYW55Iiwib3BlcmF0b3IiOiJtZSIsImdlaWQiOiJmYWtlX2dsb2JhbF'
-        '9lbnRpdHlfaWQiLCJsb2NhdGlvbiI6Imh0dHA6Ly9hbnl0aGluZy5jb20vYnVj'
-        'a2V0L29iai9wYXRoIn0.mJJ7tTxyQdQcUxq3KmK_-Q6W7wvIt4qmAIT2OyfTQF8'
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmaWxlX3BhdG'
+        'giOiJ0ZXN0L2ZvbGRlci9maWxlIiwiaXNzdWVyIjoiU0VSVklDR'
+        'SBEQVRBIERPV05MT0FEIiwib3BlcmF0b3IiOiJ0ZXN0X3VzZXIi'
+        'LCJzZXNzaW9uX2lkIjoidGVzdF9zZXNzaW9uX2lkIiwiam9iX2l'
+        'kIjoidGVzdF9qb2JfaWQiLCJjb250YWluZXJfY29kZSI6InRlc3'
+        'RfY29udGFpbmVyIiwiY29udGFpbmVyX3R5cGUiOiJ0ZXN0X3R5c'
+        'GUiLCJwYXlsb2FkIjp7InRlc3RfcGF5bG9hZCI6InRlc3RfdmFs'
+        'dWUifSwiaWF0IjoxNjUyMTk1MTQyLCJleHAiOjE2NTczNzkxNDJ'
+        '9.-Djzu1cXl_WWOeMA9u_ZQhZT39lmjXY4lFOS8qkYbFA'
     )
 
 
@@ -193,17 +195,14 @@ async def fake_job(monkeypatch):
     from app.resources.helpers import set_status
 
     await set_status(
-        '123',
-        'fake_global_entity_id',
-        'tests/routers/v1/empty.txt',
+        'test_session_id',
+        'test_job_id',
+        'test/folder/file',
         'data_download',
         'PRE_UPLOADED',
-        'any',
-        'me',
-        'fake_global_entity_id',
+        'test_container',
+        'test_user',
         payload={
             'task_id': 'fake_global_entity_id',
-            'resumable_identifier': 'fake_global_entity_id',
-            'parent_folder_geid': None,
         },
     )
