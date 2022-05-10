@@ -102,7 +102,7 @@ async def get_resource_bygeid(geid) -> dict:
 
 
 async def set_status(
-    session_id, job_id, source, action, target_status, project_code, operator, geid, payload=None, progress=0
+    session_id, job_id, source, action, target_status, project_code, operator, payload=None, progress=0
 ):
     """Set session job status."""
 
@@ -114,7 +114,6 @@ async def set_status(
     record = {
         'session_id': session_id,
         'job_id': job_id,
-        'geid': geid,
         'source': source,
         'action': action,
         'status': target_status,

@@ -115,11 +115,10 @@ class APIDataDownload:
 
         # get the temporary file path we saved in token
         # and use it to fetch the actual file
-        file_path = res_verify_token['file_path']
+        file_path = res_verify_token.get('file_path')
         if not os.path.exists(file_path):
             self.__logger.error(f'File not found {file_path} in namespace {ConfigClass.namespace}')
             response.code = EAPIResponseCode.not_found
-            response.result = None
             response.error_msg = customized_error_template(ECustomizedError.FILE_NOT_FOUND) % file_path
             return response.json_response()
 
@@ -128,6 +127,7 @@ class APIDataDownload:
         filename = os.path.basename(file_path)
 
         # Add download file log for project
+        # will be removed after kafka consumer setup
         await update_file_operation_logs(
             res_verify_token.get('operator'),
             file_path,
@@ -144,7 +144,6 @@ class APIDataDownload:
             EDataDownloadStatus.SUCCEED.name,
             res_verify_token.get('contianer_type'),
             res_verify_token.get('operator'),
-            "res_verify_token['geid']",
             res_verify_token.get('payload', {}),
         )
 

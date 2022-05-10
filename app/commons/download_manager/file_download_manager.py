@@ -95,13 +95,8 @@ class FileDownloadClient:
 
     async def set_status(self, status: EDataDownloadStatus, payload: dict):
         # pick up the first file for the metadata setup
-
-        if len(self.files_to_zip) == 1:
-            download_file = self.files_to_zip[0]
-            file_id = download_file.get('id')
-            payload.update({'zone': download_file.get('zone')})
-        else:
-            file_id = None
+        download_file = self.files_to_zip[0]
+        payload.update({'zone': download_file.get('zone')})
 
         return await set_status(
             self.session_id,
@@ -111,7 +106,6 @@ class FileDownloadClient:
             status,
             self.container_code,
             self.operator,
-            file_id,
             payload=payload,
         )
 
