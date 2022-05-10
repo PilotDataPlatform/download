@@ -16,9 +16,11 @@
 import asyncio
 import os
 import shutil
+import time
 from io import BytesIO
 from uuid import uuid4
 
+import jwt
 import pytest
 import pytest_asyncio
 import sqlalchemy
@@ -55,6 +57,7 @@ environ['MINIO_TEST_PASS'] = 'MINIO_TEST_PASS'
 environ['MINIO_ACCESS_KEY'] = 'MINIO_ACCESS_KEY'
 environ['MINIO_SECRET_KEY'] = 'MINIO_SECRET_KEY'
 environ['KEYCLOAK_MINIO_SECRET'] = 'KEYCLOAK_MINIO_SECRET'
+environ['DOWNLOAD_KEY'] = 'DOWNLOAD_KEY'
 
 environ['REDIS_HOST'] = 'localhost'
 environ['REDIS_PORT'] = '6379'
@@ -138,18 +141,36 @@ def mock_settings(monkeypatch):
 
 
 @pytest.fixture
-def jwt_token():
-    return (
-        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmaWxlX3BhdG'
-        'giOiJ0ZXN0L2ZvbGRlci9maWxlIiwiaXNzdWVyIjoiU0VSVklDR'
-        'SBEQVRBIERPV05MT0FEIiwib3BlcmF0b3IiOiJ0ZXN0X3VzZXIi'
-        'LCJzZXNzaW9uX2lkIjoidGVzdF9zZXNzaW9uX2lkIiwiam9iX2l'
-        'kIjoidGVzdF9qb2JfaWQiLCJjb250YWluZXJfY29kZSI6InRlc3'
-        'RfY29udGFpbmVyIiwiY29udGFpbmVyX3R5cGUiOiJ0ZXN0X3R5c'
-        'GUiLCJwYXlsb2FkIjp7InRlc3RfcGF5bG9hZCI6InRlc3RfdmFs'
-        'dWUifSwiaWF0IjoxNjUyMTk1MTQyLCJleHAiOjE2NTczNzkxNDJ'
-        '9.-Djzu1cXl_WWOeMA9u_ZQhZT39lmjXY4lFOS8qkYbFA'
-    )
+def file_folder_jwt_token():
+
+    hash_token_dict = {
+        'file_path': 'test/folder/file',
+        'issuer': 'SERVICE DATA DOWNLOAD',
+        'operator': 'test_user',
+        'session_id': 'test_session_id',
+        'job_id': 'test_job_id',
+        'container_code': 'test_container',
+        'container_type': 'test_type',
+        'payload': {},
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=environ['DOWNLOAD_KEY'], algorithm='HS256').decode('utf-8')
+    return hash_code
+
+
+@pytest.fixture
+def dataset_download_jwt_token():
+
+    hash_token_dict = {
+        'location': 'test/folder/file',
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=environ['DOWNLOAD_KEY'], algorithm='HS256').decode('utf-8')
+    return hash_code
 
 
 @pytest.fixture

@@ -28,17 +28,19 @@ async def test_v2_dataset_download_should_return_401_when_wrong_token(
     assert resp.json() == {'code': 401, 'error_msg': 'n', 'page': 0, 'total': 1, 'num_of_pages': 1, 'result': []}
 
 
-async def test_v2_dataset_download_should_return_200_when_success(client, jwt_token, mock_minio):
+async def test_v2_dataset_download_should_return_200_when_success(client, dataset_download_jwt_token, mock_minio):
     resp = await client.get(
-        f'/v2/dataset/download/{jwt_token}',
+        f'/v2/dataset/download/{dataset_download_jwt_token}',
     )
     assert resp.status_code == 200
     assert resp.text == 'File like object'
 
 
-async def test_v2_dataset_download_should_return_200_when_minio_raise_error(client, jwt_token, httpx_mock):
+async def test_v2_dataset_download_should_return_200_when_minio_raise_error(
+    client, dataset_download_jwt_token, httpx_mock
+):
     resp = await client.get(
-        f'/v2/dataset/download/{jwt_token}',
+        f'/v2/dataset/download/{dataset_download_jwt_token}',
     )
     assert resp.status_code == 200
     assert 'error_msg' in resp.json()

@@ -38,9 +38,9 @@ async def test_v1_download_status_should_return_500_when_when_token_not_verified
     }
 
 
-async def test_v1_download_status_should_return_404_when_job_not_found(client, jwt_token):
+async def test_v1_download_status_should_return_404_when_job_not_found(client, file_folder_jwt_token):
     resp = await client.get(
-        f'/v1/download/status/{jwt_token}',
+        f'/v1/download/status/{file_folder_jwt_token}',
     )
     assert resp.status_code == 404
     assert resp.json() == {
@@ -55,11 +55,11 @@ async def test_v1_download_status_should_return_404_when_job_not_found(client, j
 
 async def test_v1_download_status_should_return_200_when_success(
     client,
-    jwt_token,
+    file_folder_jwt_token,
     fake_job,
 ):
     resp = await client.get(
-        f'/v1/download/status/{jwt_token}',
+        f'/v1/download/status/{file_folder_jwt_token}',
     )
     assert resp.status_code == 200
     result = resp.json()['result']
@@ -72,7 +72,7 @@ async def test_v1_download_status_should_return_200_when_success(
     assert result['payload']['task_id'] == 'fake_global_entity_id'
 
 
-async def test_v1_download_should_return_500_when_invalid_token(client, jwt_token, fake_job):
+async def test_v1_download_should_return_500_when_invalid_token(client, file_folder_jwt_token, fake_job):
     resp = await client.get(
         '/v1/download/bad_token',
     )
@@ -87,10 +87,10 @@ async def test_v1_download_should_return_500_when_invalid_token(client, jwt_toke
     }
 
 
-async def test_v1_download_should_return_404_when_path_not_found(client, jwt_token):
+async def test_v1_download_should_return_404_when_path_not_found(client, file_folder_jwt_token):
 
     resp = await client.get(
-        f'/v1/download/{jwt_token}',
+        f'/v1/download/{file_folder_jwt_token}',
     )
     assert resp.status_code == 404
     assert resp.json() == {
