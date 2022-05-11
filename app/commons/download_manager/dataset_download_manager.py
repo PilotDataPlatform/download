@@ -33,6 +33,26 @@ async def create_dataset_download_client(
     container_type: str,
     session_id: str,
 ):
+    '''
+    Summary:
+        The function will create the DatasetDownloadClient object asynchronously.
+        also it will call the DatasetDownloadClient.add_files_to_list to prepare
+        the files for downloading.
+
+        Note: this class is different with FileDownloadClient, which allows the
+        empty file/folder
+
+    Parameter:
+        - auth_token(dict of str pairs): the auth/refresh token to access minio
+        - operator(string): the user who takes the operation
+        - container_code(string): the unique code for project/dataset
+        - container_type(string): the type will be dataset or project
+        - session_id(string): the unique id to track the user login session
+
+    Return:
+        - DatasetDownloadClient
+    '''
+
     download_client = DatasetDownloadClient(
         auth_token=auth_token,
         operator=operator,
@@ -64,8 +84,19 @@ class DatasetDownloadClient(FileDownloadClient):
             [],
         )
 
-    async def add_schemas(self, dataset_geid):
-        """Saves schema json files to folder that will zipped."""
+    async def add_schemas(self, dataset_geid: str) -> None:
+        '''
+        Summary:
+            The function will call the dataset shema api to get detail of schemas.
+            and then saves schema json files to folder that will zipped.
+
+        Parameter:
+            - dataset_geid(str): the identifier of dataset
+
+        Return:
+            - None
+        '''
+
         try:
             if not await aiofiles.os.path.isdir(self.tmp_folder):
                 await aiofiles.os.mkdir(self.tmp_folder)
@@ -97,6 +128,14 @@ class DatasetDownloadClient(FileDownloadClient):
             raise
 
     async def generate_hash_code(self) -> str:
+        '''
+        Summary:
+            The function will create the hashcode for download api.
+
+        Return:
+            - str: hash code
+        '''
+
         self.result_file_name = self.tmp_folder + '.zip'
 
         return await generate_token(
@@ -109,19 +148,47 @@ class DatasetDownloadClient(FileDownloadClient):
         )
 
     async def add_files_to_list(self, dataset_code):
+        '''
+        Summary:
+            The function will add the file/folder with input geid into list.
+            It is slightly different with file download. The dataset download
+            will try to query ALL the file/folders under the target dataset.
+
+        Parameter:
+            - dataset_code(str): the unique code of dataset
+
+        Return:
+            - None
+        '''
+
         folder_tree = await get_files_folder_recursive(
             dataset_code,
             'dataset',
             self.operator,
+            file_type='file',
         )
         # only take the file for downloading
         for x in folder_tree:
-            if 'file' == x.get('type'):
-                # flatten the storage url
-                x.update({'location': x.get('storage', {}).get('location_uri')})
-                self.files_to_zip.append(x)
+            # flatten the storage url
+            x.update({'location': x.get('storage', {}).get('location_uri')})
+            self.files_to_zip.append(x)
 
     async def background_worker(self, hash_code: str) -> None:
+        '''
+        Summary:
+            The function is the core of the object. this is a background job and
+            will be trigger by api. Funtion will make following actions:
+                - download all files in the file_to_zip
+                - download all schemas under dataset
+                - zip files/schemas into a zip file
+                - create the activity logs for dataset
+
+        Parameter:
+            - hash_code(str): the hash code for downloading
+
+        Return:
+            - dict: None
+        '''
 
         await self._file_download_worker(hash_code)
 

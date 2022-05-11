@@ -22,7 +22,22 @@ class ResourceAlreadyInUsed(Exception):
     pass
 
 
-async def bulk_lock_operation(resource_key: list, operation: str, lock=True) -> dict:
+async def bulk_lock_operation(resource_key: list, operation: str, lock: bool = True) -> dict:
+    '''
+    Summary:
+        The function will perform batch lock/unlock operation based
+        on the parameters.
+
+    Parameter:
+        - resource_key(list): list of minio path will be locked, formating
+            as <bucket>/path/to/file
+        - operation(string): can be either read or write operation
+        - lock(bool): True indicate lock operation, False indicates unlock operation
+
+    Return:
+        - dict: the node which will be locked
+    '''
+
     # base on the flag toggle the http methods
     method = 'POST' if lock else 'DELETE'
 

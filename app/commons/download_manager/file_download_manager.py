@@ -40,13 +40,35 @@ from app.resources.helpers import set_status
 
 async def create_file_download_client(
     files: List[Dict[str, Any]],
-    auth_token: Dict[str, Any],
+    auth_token: Dict[str, str],
     operator: str,
     container_code: str,
     container_type: str,
     session_id: str,
     file_geids_to_include: Optional[Set[str]] = None,
 ):
+    '''
+    Summary:
+        The function will create the FileDownloadClient object asynchronously.
+        also it will call the FileDownloadClient.add_files_to_list to prepare
+        the info for downloading.
+
+        If there is no file to be added (some empty forlder). The function will
+        raise error.
+
+    Parameter:
+        - files(list): the list of file will be added into object
+        - auth_token(dict of str pairs): the auth/refresh token to access minio
+        - operator(string): the user who takes the operation
+        - container_code(string): the unique code for project/dataset
+        - container_type(string): the type will be dataset or project
+        - session_id(string): the unique id to track the user login session
+        - file_geids_to_include(list): this is to check if request files are included
+            by copy approval
+
+    Return:
+        - FileDownloadClient
+    '''
     download_client = FileDownloadClient(
         auth_token=auth_token,
         operator=operator,
@@ -94,7 +116,18 @@ class FileDownloadClient:
         self.logger = LoggerFactory('api_data_download').get_logger()
 
     async def set_status(self, status: EDataDownloadStatus, payload: dict):
-        # pick up the first file for the metadata setup
+        '''
+        Summary:
+            The function will set the job status for current object in
+            redis
+
+        Parameter:
+            - status(EDataDownloadStatus): the job status
+            - payload(dict): the extra infomation
+
+        Return:
+            - dict: detail job info
+        '''
         if len(self.files_to_zip) > 0:
             download_file = self.files_to_zip[0]
             payload.update({'zone': download_file.get('zone')})
@@ -111,6 +144,19 @@ class FileDownloadClient:
         )
 
     async def add_files_to_list(self, geid: str) -> None:
+        '''
+        Summary:
+            The function will add the file/folder with input geid into list.
+            if input geid points to a folder then it will call the metadata
+            api to get ALL files under it and its subfolders
+
+        Parameter:
+            - geid(str): the uuid of file/folder
+
+        Return:
+            - None
+        '''
+
         ff_object = await get_files_folder_by_id(geid)
 
         file_list = []
@@ -121,13 +167,12 @@ class FileDownloadClient:
                 self.container_code,
                 self.container_type,
                 ff_object.get('owner'),
-                ff_object.get('zone'),
-                ff_object.get('parent_path') + '.' + ff_object.get('name'),
+                zone=ff_object.get('zone'),
+                file_type='file',
+                parent_path=ff_object.get('parent_path') + '.' + ff_object.get('name'),
             )
             # only take the file for downloading
-            for x in folder_tree:
-                if 'file' == x.get('type'):
-                    file_list.append(x)
+            file_list = folder_tree
 
         else:
             file_list = [ff_object]
@@ -144,6 +189,16 @@ class FileDownloadClient:
         return None
 
     async def generate_hash_code(self) -> str:
+        '''
+        Summary:
+            The function will create the hashcode for download api.
+            In the funtion will check if user download single file
+            OR multiple files to generate the file_path differently
+
+        Return:
+            - str: hash code
+        '''
+
         if len(self.files_to_zip) > 1:
             self.result_file_name = self.tmp_folder + '.zip'
         else:
@@ -160,6 +215,20 @@ class FileDownloadClient:
         )
 
     async def _file_download_worker(self, hash_code: str) -> None:
+        '''
+        Summary:
+            The function will download all the file that has been added
+            into the list to tmp folder. Before downloading the file, the
+            function will lock ALL of them. After downloading, it will
+            set the job status to finish.
+
+        Parameter:
+            - hash_code(str): the hashcode
+
+        Return:
+            - None
+        '''
+
         lock_keys = []
         try:
             # add the file lock
@@ -180,20 +249,11 @@ class FileDownloadClient:
                 await mc.fget_object(obj, self.tmp_folder)
                 self.logger.info(f'File downloaded: {str(obj)}')
 
-            # # TEST ONLY
-            # print(self.tmp_folder)
-            # import os
-            # os.mkdir(self.tmp_folder)
-            # file_loc = self.tmp_folder + '/readme.txt'
-            # print(file_loc)
-            # with open(file_loc, 'w') as f:
-            #     f.write('Create a new text file!')
-
-            await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING.name, payload={'hash_code': hash_code})
+            await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': hash_code})
         except Exception as e:
             self.logger.error('Error in background job: ' + (str(e)))
             payload = {'error_msg': str(e)}
-            await self.set_status(EDataDownloadStatus.CANCELLED.name, payload=payload)
+            await self.set_status(EDataDownloadStatus.CANCELLED, payload=payload)
         finally:
             self.logger.info('Start to unlock the nodes')
             await bulk_lock_operation(lock_keys, 'read', lock=False)
@@ -202,7 +262,21 @@ class FileDownloadClient:
 
         return None
 
-    async def update_activity_log(self, dataset_geid, source_entry, event_type):
+    async def update_activity_log(self, dataset_geid: str, source_entry: list, event_type: str) -> dict:
+        '''
+        Summary:
+            The function will create activity log for dataset file download
+            ONLY.
+
+        Parameter:
+            - dataset_geid(str): the identifier of dataset
+            - source_entry(list): the list of file has been downloaded
+            - event_type(str): in download service this will be DATASET_FILEDOWNLOAD_SUCCEED
+
+        Return:
+            - dict: http reponse
+        '''
+
         url = ConfigClass.QUEUE_SERVICE + 'broker/pub'
         post_json = {
             'event_type': event_type,
@@ -223,9 +297,16 @@ class FileDownloadClient:
             error_msg = 'update_activity_log {}: {}'.format(res.status_code, res.text)
             self.logger.error(error_msg)
             raise Exception(error_msg)
-        return res
+        return res.json()
 
     async def _zip_worker(self):
+        '''
+        Summary:
+            The function will zip the files under the tmp folder.
+
+        Return:
+            - None
+        '''
 
         self.logger.info('Start to ZIP files')
         await run_in_threadpool(shutil.make_archive, self.tmp_folder, 'zip', self.tmp_folder)
@@ -233,6 +314,18 @@ class FileDownloadClient:
         return None
 
     async def background_worker(self, hash_code: str) -> None:
+        '''
+        Summary:
+            The function is the core of the object. this is a background job and
+            will be trigger by api. Funtion will download all file in the file_to_zip
+            list and zip them together
+
+        Parameter:
+            - hash_code(str): the hash code for downloading
+
+        Return:
+            - None
+        '''
 
         await self._file_download_worker(hash_code)
 

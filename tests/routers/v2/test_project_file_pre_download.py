@@ -170,7 +170,8 @@ async def test_v2_download_pre_return_200_when_label_is_Folder(client, httpx_moc
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=fake_project_code'
-        '&container_type=project&zone=0&recursive=true&archived=false&parent_path=admin.fake_file&owner=me',
+        '&container_type=project&zone=0&recursive=true&archived=false&parent_path=admi'
+        'n.fake_file&owner=me&type=file',
         json={
             'result': [
                 {

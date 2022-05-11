@@ -49,7 +49,8 @@ async def test_v2_dataset_download_pre_return_200_when_success(client, httpx_moc
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=fake_project_code&'
-        'container_type=dataset&zone=0&recursive=true&archived=false&parent_path=&owner=me',
+        'container_type=dataset&zone=0&recursive=true&archived=false&parent_path=&owner'
+        '=me&type=file',
         json={
             'result': [
                 {
@@ -110,7 +111,8 @@ async def test_v2_dataset_download_pre_empty_dataset_return_200_when_success(cli
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=fake_project_code'
-        '&container_type=dataset&zone=0&recursive=true&archived=false&parent_path=&owner=me',
+        '&container_type=dataset&zone=0&recursive=true&archived=false&parent_path=&own'
+        'er=me&type=file',
         json={'result': []},
     )
 

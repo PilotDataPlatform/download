@@ -141,7 +141,7 @@ class APIDataDownload:
             res_verify_token.get('job_id'),
             file_path,
             'data_download',
-            EDataDownloadStatus.SUCCEED.name,
+            EDataDownloadStatus.SUCCEED,
             res_verify_token.get('contianer_type'),
             res_verify_token.get('operator'),
             res_verify_token.get('payload', {}),

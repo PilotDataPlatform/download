@@ -108,9 +108,7 @@ class APIDataDownload:
             file_geids_to_include,
         )
         hash_code = await download_client.generate_hash_code()
-        status_result = await download_client.set_status(
-            EDataDownloadStatus.ZIPPING.name, payload={'hash_code': hash_code}
-        )
+        status_result = await download_client.set_status(EDataDownloadStatus.ZIPPING, payload={'hash_code': hash_code})
         download_client.logger.info(
             f'Starting background job for: {data.container_code}.'
             f'number of files {len(download_client.files_to_zip)}'
@@ -178,9 +176,7 @@ class APIDataDownload:
             data.session_id,
         )
         hash_code = await download_client.generate_hash_code()
-        status_result = await download_client.set_status(
-            EDataDownloadStatus.ZIPPING.name, payload={'hash_code': hash_code}
-        )
+        status_result = await download_client.set_status(EDataDownloadStatus.ZIPPING, payload={'hash_code': hash_code})
         download_client.logger.info(
             f'Starting background job for: {data.dataset_code}.' f'number of files {len(download_client.files_to_zip)}'
         )

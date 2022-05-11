@@ -24,8 +24,10 @@ class InvalidToken(Exception):
     pass
 
 
+# TODO integrate with verify_download_token after
+# changing the token structure in dataset service
 def verify_dataset_version_token(token):
-    """verify download token with the download key."""
+
     try:
         res = jwt.decode(token, ConfigClass.DOWNLOAD_KEY, algorithms=['HS256'])
         return True, res
@@ -81,7 +83,7 @@ async def generate_token(
         - operator(string): the user who takes the operation
         - session_id(string): the unique id to track the user login session
         - job_id(string): the unique id for the job,
-        - payload(dict): some of the extra infomation saved in dict
+        - payload(dict) default=None: some of the extra infomation saved in dict
 
     Return:
         - str: the hash code

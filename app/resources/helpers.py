@@ -24,13 +24,32 @@ import httpx
 from app.commons.data_providers.redis import SrvRedisSingleton
 from app.config import ConfigClass
 from app.models.base_models import EAPIResponseCode
+from app.models.models_data_download import EDataDownloadStatus
 
-from .error_handler import internal_jsonrespon_handler
+
+class ResourceNotFound(Exception):
+    pass
 
 
 async def get_files_folder_recursive(
-    container_code: str, container_type: str, owner: str, zone: int = 0, parent_path: str = ''
+    container_code: str, container_type: str, owner: str, zone: int = 0, file_type: str = None, parent_path: str = ''
 ) -> List[dict]:
+    '''
+    Summary:
+        The function will call the api into metadata service and fetch
+        the file/folder object match the parameters recursively.
+
+    Parameter:
+        - container_code(str): the code of container
+        - container_type(string): the type can project or dataset
+        - owner(str): the owner of file/object
+        - zone(int) default=0: 0 for greenroom, 1 for core
+        - file_type(str) default=None: the file type can be file or folder
+        - parent_path(str) default='': the parent folder path of target file/folder
+
+    Return:
+        - list: the list of file/folder meatch the searching parameter
+    '''
 
     payload = {
         'container_code': container_code,
@@ -41,6 +60,9 @@ async def get_files_folder_recursive(
         'parent_path': parent_path,
         'owner': owner,
     }
+    if file_type:
+        payload.update({'type': file_type})
+
     url = ConfigClass.METADATA_SERVICE + 'items/search/'
     async with httpx.AsyncClient() as client:
         res = await client.get(url, params=payload)
@@ -51,6 +73,17 @@ async def get_files_folder_recursive(
 
 
 async def get_files_folder_by_id(_id: UUID) -> dict:
+    '''
+    Summary:
+        The function will call the api into metadata service and fetch
+        the file/folder object by item.
+
+    Parameter:
+        - _id(str): uuid of the file/folder
+
+    Return:
+        - dict: the detail info of item with target id
+    '''
 
     url = ConfigClass.METADATA_SERVICE + f'item/{_id}/'
     async with httpx.AsyncClient() as client:
@@ -59,7 +92,7 @@ async def get_files_folder_by_id(_id: UUID) -> dict:
 
     # raise not found if the resource not exist
     if len(file_folder_object) == 0 or res.status_code == EAPIResponseCode.not_found:
-        raise Exception('resource %s does not exist' % _id)
+        raise ResourceNotFound('resource %s does not exist' % _id)
     elif res.status_code != 200:
         raise Exception('Error when get resource: %s' % res.text)
 
@@ -67,24 +100,48 @@ async def get_files_folder_by_id(_id: UUID) -> dict:
 
 
 async def set_status(
-    session_id, job_id, source, action, target_status, project_code, operator, payload=None, progress=0
-):
-    """Set session job status."""
+    session_id: str,
+    job_id: str,
+    source: str,
+    action: str,
+    target_status: EDataDownloadStatus,
+    project_code: str,
+    operator: str,
+    payload: dict = None,
+) -> dict:
+    '''
+    Summary:
+        The function will call the api into redis api and store
+        the inputs as the download job status
+
+    Parameter:
+        - session_id(str): the session id for current user
+        - job_id(str): the job identifier for running action
+        - source(str): the source file of current action. if multiple
+            files are involved in one action, the source will be the
+            zip file.
+        - action(str): in download service this will be marked as data_download
+        - target_status(EDataDownloadStatus): the job status please
+            check EDataDownloadStatus object
+        - project_code(str): the unique code of project
+        - operator(str): the user who takes current action
+        - payload(dict) defaul=None: fields for extra infomation
+
+    Return:
+        - dict: the detail job info
+    '''
 
     srv_redis = SrvRedisSingleton()
     my_key = 'dataaction:{}:Container:{}:{}:{}:{}:{}'.format(session_id, job_id, action, project_code, operator, source)
     payload = payload if payload else {}
-    # payload["zone"] = ConfigClass.disk_namespace
-    # payload["frontend_zone"] = get_frontend_zone(ConfigClass.disk_namespace)
     record = {
         'session_id': session_id,
         'job_id': job_id,
         'source': source,
         'action': action,
-        'status': target_status,
+        'status': target_status.name,
         'project_code': project_code,
         'operator': operator,
-        'progress': progress,
         'payload': payload,
         'update_timestamp': str(round(time.time())),
     }
@@ -93,8 +150,23 @@ async def set_status(
     return record
 
 
-async def get_status(session_id, job_id, project_code, action, operator=None) -> List[str]:
-    """Get session job status from datastore."""
+async def get_status(session_id: str, job_id: str, project_code: str, action: str, operator: str = None) -> List[dict]:
+    '''
+    Summary:
+        The function will fetch the existing job from redis by the input.
+        Return empty list if job does not exist
+
+    Parameter:
+        - session_id(str): the session id for current user
+        - job_id(str): the job identifier for running action
+        - project_code(str): the unique code of project
+        - action(str): in download service this will be marked as data_download
+        - operator(str) default=None: the user who takes current action
+
+    Return:
+        - dict: the detail job info
+    '''
+
     srv_redis = SrvRedisSingleton()
     my_key = 'dataaction:{}:Container:{}:{}:{}'.format(session_id, job_id, action, project_code)
     if operator:
@@ -103,18 +175,26 @@ async def get_status(session_id, job_id, project_code, action, operator=None) ->
     return [json.loads(record.decode('utf-8')) for record in res_binary] if res_binary else []
 
 
-async def delete_by_session_id(session_id: str, job_id: str = '*', action: str = '*'):
-    """Delete status by session id."""
+async def update_file_operation_logs(
+    operator: str, download_path: str, project_code: str, operation_type: str = 'data_download', extra: dict = None
+) -> dict:
+    '''
+    Summary:
+        The function will fetch the existing job from redis by the input.
+        Return empty list if job does not exist
 
-    srv_redis = SrvRedisSingleton()
-    prefix = 'dataaction:' + session_id + ':' + job_id + ':' + action
-    await srv_redis.mdelete_by_prefix(prefix)
-    return True
+    Parameter:
+        - operator(str): the user who takes current action
+        - download_path(str): the location of file or zipped file path
+        - project_code(str): the unique code of project
+        - operation_type(str) default='data_download': in download service
+            this will be marked as data_download
+        - extra(dict) default=None: the field for extra info
 
+    Return:
+        - dict: the detail job info
+    '''
 
-async def update_file_operation_logs(operator, download_path, project_code, operation_type='data_download', extra=None):
-    """Endpoint."""
-    # new audit log api
     url_audit_log = ConfigClass.PROVENANCE_SERVICE + 'audit-logs'
     payload = {
         'action': operation_type,
@@ -127,5 +207,8 @@ async def update_file_operation_logs(operator, download_path, project_code, oper
         'extra': extra if extra else {},
     }
     async with httpx.AsyncClient() as client:
-        res_audit_logs = await client.post(url_audit_log, json=payload)
-    return internal_jsonrespon_handler(url_audit_log, res_audit_logs)
+        res = await client.post(url_audit_log, json=payload)
+
+        if res.status_code != 200:
+            raise Exception('Erorr when create autid log: %s' % (str(res.text)))
+    return res.json()
