@@ -66,41 +66,6 @@ async def get_files_folder_by_id(_id: UUID) -> dict:
     return file_folder_object
 
 
-# should be deprecated
-async def get_children_nodes(start_geid: str) -> list:
-    """The function is different than above one this one will return next layer folder or files under the start_geid."""
-
-    payload = {
-        'label': 'own',
-        'start_label': 'Folder',
-        'start_params': {'global_entity_id': start_geid},
-    }
-
-    node_query_url = ConfigClass.NEO4J_SERVICE + 'relations/query'
-    async with httpx.AsyncClient() as client:
-        response = await client.post(node_query_url, json=payload)
-    ffs = [x.get('end_node') for x in response.json()]
-
-    return ffs
-
-
-# should be deprecated
-async def get_resource_bygeid(geid) -> dict:
-    """function will call the neo4j api to get the node by geid.
-
-    raise exception if the geid is not exist
-    """
-    url = ConfigClass.NEO4J_SERVICE + 'nodes/geid/%s' % geid
-    async with httpx.AsyncClient() as client:
-        res = await client.get(url)
-    nodes = res.json()
-
-    if len(nodes) == 0:
-        raise Exception('Not found resource: ' + geid)
-
-    return nodes[0]
-
-
 async def set_status(
     session_id, job_id, source, action, target_status, project_code, operator, payload=None, progress=0
 ):

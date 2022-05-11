@@ -73,3 +73,36 @@ async def test_download_client_add_file(httpx_mock):
 
     assert len(download_client.files_to_zip) == 1
     assert download_client.files_to_zip[0].get('id') == 'geid_1'
+
+
+async def test_download_dataset_add_schemas(httpx_mock):
+    httpx_mock.add_response(
+        method='GET',
+        url='http://metadata_service/v1/items/search/?container_code=any_code'
+        '&container_type=dataset&zone=0&recursive=true&archived=false&parent_path=&owner=me',
+        json={'result': []},
+    )
+
+    download_client = await create_dataset_download_client(
+        auth_token={'at': 'token', 'rt': 'refresh_token'},
+        operator='me',
+        container_code='any_code',
+        container_type='project',
+        session_id='1234',
+    )
+
+    httpx_mock.add_response(
+        method='POST',
+        url='http://dataset_service/v1/schema/list',
+        json={'result': [{'name': 'test_schema_1', 'content': {}}]},
+        status_code=200,
+    )
+
+    httpx_mock.add_response(
+        method='POST',
+        url='http://dataset_service/v1/schema/list',
+        json={'result': [{'name': 'test_schema_2', 'content': {}}]},
+        status_code=200,
+    )
+
+    await download_client.add_schemas('test_id')
