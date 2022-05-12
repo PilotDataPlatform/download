@@ -72,11 +72,11 @@ class APIDataDownload:
         # verify hash code
         try:
             res_verify_token = await verify_download_token(hash_code)
-        except (ExpiredSignatureError, InvalidToken) as e:
+        except ExpiredSignatureError as e:
             response.code = EAPIResponseCode.unauthorized
             response.error_msg = str(e)
             return response.json_response()
-        except DecodeError as e:
+        except (DecodeError, InvalidToken) as e:
             response.code = EAPIResponseCode.bad_request
             response.error_msg = str(e)
             return response.json_response()
@@ -128,11 +128,11 @@ class APIDataDownload:
         # Verify and decode token
         try:
             res_verify_token = await verify_download_token(hash_code)
-        except (ExpiredSignatureError, InvalidToken) as e:
+        except ExpiredSignatureError as e:
             response.code = EAPIResponseCode.unauthorized
             response.error_msg = str(e)
             return response.json_response()
-        except DecodeError as e:
+        except (DecodeError, InvalidToken) as e:
             response.code = EAPIResponseCode.bad_request
             response.error_msg = str(e)
             return response.json_response()
