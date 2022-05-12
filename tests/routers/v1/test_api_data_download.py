@@ -23,14 +23,44 @@ from app.config import ConfigClass
 pytestmark = pytest.mark.asyncio
 
 
-async def test_v1_download_status_should_return_500_when_when_token_not_verified(client):
+async def test_v1_download_status_should_return_400_when_when_token_not_verified(client):
     resp = await client.get(
         '/v1/download/status/bad_token',
     )
-    assert resp.status_code == 500
+    assert resp.status_code == 400
     assert resp.json() == {
-        'code': 500,
+        'code': 400,
         'error_msg': 'Not enough segments',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
+async def test_v1_download_status_should_return_401_when_when_token_is_not_valid(client, file_folder_jwt_token_invalid):
+    resp = await client.get(
+        f'/v1/download/status/{file_folder_jwt_token_invalid}',
+    )
+    assert resp.status_code == 401
+    assert resp.json() == {
+        'code': 401,
+        'error_msg': 'Invalid download token',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
+async def test_v1_download_status_should_return_401_when_when_token_expired(client, file_folder_jwt_token_expired):
+    resp = await client.get(
+        f'/v1/download/status/{file_folder_jwt_token_expired}',
+    )
+    assert resp.status_code == 401
+    assert resp.json() == {
+        'code': 401,
+        'error_msg': 'Signature has expired',
         'page': 0,
         'total': 1,
         'num_of_pages': 1,
@@ -72,14 +102,44 @@ async def test_v1_download_status_should_return_200_when_success(
     assert result['payload']['task_id'] == 'fake_global_entity_id'
 
 
-async def test_v1_download_should_return_500_when_invalid_token(client, file_folder_jwt_token, fake_job):
+async def test_v1_download_should_return_400_when_token_segment_missing(client):
     resp = await client.get(
         '/v1/download/bad_token',
     )
-    assert resp.status_code == 500
+    assert resp.status_code == 400
     assert resp.json() == {
-        'code': 500,
+        'code': 400,
         'error_msg': 'Not enough segments',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
+async def test_v1_download_should_return_401_when_when_token_is_not_valid(client, file_folder_jwt_token_invalid):
+    resp = await client.get(
+        f'/v1/download/{file_folder_jwt_token_invalid}',
+    )
+    assert resp.status_code == 401
+    assert resp.json() == {
+        'code': 401,
+        'error_msg': 'Invalid download token',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
+async def test_v1_download_should_return_401_when_when_token_expired(client, file_folder_jwt_token_expired):
+    resp = await client.get(
+        f'/v1/download/{file_folder_jwt_token_expired}',
+    )
+    assert resp.status_code == 401
+    assert resp.json() == {
+        'code': 401,
+        'error_msg': 'Signature has expired',
         'page': 0,
         'total': 1,
         'num_of_pages': 1,

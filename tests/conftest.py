@@ -161,6 +161,45 @@ def file_folder_jwt_token():
 
 
 @pytest.fixture
+def file_folder_jwt_token_expired():
+
+    hash_token_dict = {
+        'file_path': 'test/folder/file',
+        'issuer': 'SERVICE DATA DOWNLOAD',
+        'operator': 'test_user',
+        'session_id': 'test_session_id',
+        'job_id': 'test_job_id',
+        'container_code': 'test_container',
+        'container_type': 'test_type',
+        'payload': {},
+        'iat': int(time.time()),
+        'exp': int(time.time()) - 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=environ['DOWNLOAD_KEY'], algorithm='HS256').decode('utf-8')
+    return hash_code
+
+
+@pytest.fixture
+def file_folder_jwt_token_invalid():
+
+    hash_token_dict = {
+        'issuer': 'SERVICE DATA DOWNLOAD',
+        'operator': 'test_user',
+        'session_id': 'test_session_id',
+        'job_id': 'test_job_id',
+        'container_code': 'test_container',
+        'container_type': 'test_type',
+        'payload': {},
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=environ['DOWNLOAD_KEY'], algorithm='HS256').decode('utf-8')
+    return hash_code
+
+
+@pytest.fixture
 def dataset_download_jwt_token():
 
     hash_token_dict = {

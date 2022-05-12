@@ -20,6 +20,7 @@ from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from fastapi_utils import cbv
 from jwt import ExpiredSignatureError
+from jwt.exceptions import DecodeError
 
 from app.config import ConfigClass
 from app.models.base_models import APIResponse
@@ -71,8 +72,12 @@ class APIDataDownload:
         # verify hash code
         try:
             res_verify_token = await verify_download_token(hash_code)
-        except ExpiredSignatureError or InvalidToken as e:
+        except (ExpiredSignatureError, InvalidToken) as e:
             response.code = EAPIResponseCode.unauthorized
+            response.error_msg = str(e)
+            return response.json_response()
+        except DecodeError as e:
+            response.code = EAPIResponseCode.bad_request
             response.error_msg = str(e)
             return response.json_response()
         except Exception as e:
@@ -123,8 +128,12 @@ class APIDataDownload:
         # Verify and decode token
         try:
             res_verify_token = await verify_download_token(hash_code)
-        except ExpiredSignatureError or InvalidToken as e:
+        except (ExpiredSignatureError, InvalidToken) as e:
             response.code = EAPIResponseCode.unauthorized
+            response.error_msg = str(e)
+            return response.json_response()
+        except DecodeError as e:
+            response.code = EAPIResponseCode.bad_request
             response.error_msg = str(e)
             return response.json_response()
         except Exception as e:

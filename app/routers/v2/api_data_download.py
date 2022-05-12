@@ -42,6 +42,7 @@ from app.models.models_data_download import PreDataDownloadPOST
 from app.models.models_data_download import PreDataDownloadResponse
 from app.resources.download_token_manager import verify_dataset_version_token
 from app.resources.error_handler import catch_internal
+from app.resources.helpers import ResourceNotFound
 from app.services.approval.client import ApprovalServiceClient
 
 router = APIRouter()
@@ -123,27 +124,38 @@ class APIDataDownload:
             )
             file_geids_to_include = set(request_approval_entities.keys())
 
-        download_client = await create_file_download_client(
-            data.files,
-            minio_token,
-            data.operator,
-            data.container_code,
-            data.container_type,
-            session_id,
-            file_geids_to_include,
-        )
-        hash_code = await download_client.generate_hash_code()
-        status_result = await download_client.set_status(EDataDownloadStatus.ZIPPING, payload={'hash_code': hash_code})
-        download_client.logger.info(
-            f'Starting background job for: {data.container_code}.'
-            f'number of files {len(download_client.files_to_zip)}'
-        )
+        try:
+            download_client = await create_file_download_client(
+                data.files,
+                minio_token,
+                data.operator,
+                data.container_code,
+                data.container_type,
+                session_id,
+                file_geids_to_include,
+            )
+            hash_code = await download_client.generate_hash_code()
+            status_result = await download_client.set_status(
+                EDataDownloadStatus.ZIPPING, payload={'hash_code': hash_code}
+            )
+            download_client.logger.info(
+                f'Starting background job for: {data.container_code}.'
+                f'number of files {len(download_client.files_to_zip)}'
+            )
 
-        # start the background job for the zipping
-        background_tasks.add_task(download_client.background_worker, hash_code)
+            # start the background job for the zipping
+            background_tasks.add_task(download_client.background_worker, hash_code)
 
-        response.result = status_result
-        response.code = EAPIResponseCode.success
+            response.result = status_result
+            response.code = EAPIResponseCode.success
+
+        except ResourceNotFound as e:
+            response.error_msg = str(e)
+            response.code = EAPIResponseCode.not_found
+        except Exception as e:
+            response.error_msg = str(e)
+            response.code = EAPIResponseCode.internal_error
+
         return response.json_response()
 
     @router.post('/dataset/download/pre', tags=[_API_TAG], summary='Download all files & schemas in a dataset')

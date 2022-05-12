@@ -24,7 +24,7 @@ async def test_v2_download_pre_return_422_when_container_code_and_type_are_missi
     assert resp.status_code == 422
 
 
-async def test_v2_download_pre_return_500_when_fail_to_add_files_to_zip(
+async def test_v2_download_pre_return_404_when_fail_to_add_files_to_zip(
     client,
     httpx_mock,
 ):
@@ -46,14 +46,14 @@ async def test_v2_download_pre_return_500_when_fail_to_add_files_to_zip(
             'files': [{'geid': 'fake_geid'}],
         },
     )
-    assert resp.status_code == 500
+    assert resp.status_code == 404
     assert resp.json() == {
-        'code': 500,
-        'error_msg': '[Internal] api_data_download resource fake_geid does not exist',
+        'code': 404,
+        'error_msg': 'resource fake_geid does not exist',
         'page': 0,
         'total': 1,
         'num_of_pages': 1,
-        'result': None,
+        'result': [],
     }
 
 
@@ -147,14 +147,12 @@ async def test_v2_download_pre_return_200_when_label_is_not_Folder(client, httpx
     assert result['payload']['hash_code']
 
 
-async def test_v2_download_pre_return_200_when_label_is_Folder(client, httpx_mock, metadata, mock_minio):
+async def test_v2_download_pre_return_200_when_type_is_Folder(client, httpx_mock, metadata, mock_minio):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/item/fake_geid/',
         json={
             'result': {
-                'code': 'any_code',
-                'labels': 'any_label',
                 'storage': {'location_uri': 'http://anything.com/bucket/obj/path'},
                 'id': 'fake_geid',
                 'type': 'folder',
@@ -175,8 +173,6 @@ async def test_v2_download_pre_return_200_when_label_is_Folder(client, httpx_moc
         json={
             'result': [
                 {
-                    'code': 'any_code',
-                    'labels': 'any_label',
                     'storage': {'location_uri': 'http://anything.com/bucket/obj/path'},
                     'id': 'fake_geid',
                     'type': 'file',
