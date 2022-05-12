@@ -22,7 +22,6 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from pydantic import Field
-from pydantic.types import constr
 
 from .base_models import APIResponse
 
@@ -32,19 +31,16 @@ class PreDataDownloadPOST(BaseModel):
 
     files: List[Dict[str, Any]]
     operator: str
-    session_id: str
-    project_code: str = ''
-    dataset_geid: str = ''
-    dataset_description: bool = False
+    container_code: str
+    container_type: str
     approval_request_id: Optional[UUID]
 
 
 class DatasetPrePOST(BaseModel):
     """Pre download dataset payload model."""
 
-    dataset_geid: constr(min_length=2)
+    dataset_code: str
     operator: str
-    session_id: str
 
 
 class PreSignedDownload(BaseModel):
@@ -157,3 +153,6 @@ class EDataDownloadStatus(Enum):
     ZIPPING = 3
     READY_FOR_DOWNLOADING = 5
     SUCCEED = 7
+
+    def __str__(self):
+        return '%s' % self.name

@@ -18,7 +18,6 @@ import traceback
 from functools import wraps
 
 from common import LoggerFactory
-from httpx import Response
 
 from app.models.base_models import APIResponse
 from app.models.base_models import EAPIResponseCode
@@ -85,19 +84,3 @@ def customized_error_template(customized_error: ECustomizedError):
         'INVALID_TOKEN': '[Invalid Token] %s',
         'INTERNAL': '[Internal] %s',
     }.get(customized_error.name, 'Unknown Error')
-
-
-def internal_jsonrespon_handler(endpoint: str, response: Response):
-    """return json response when code starts with 2 , else riase an error."""
-    if response.status_code // 200 == 1:
-        return response.json()
-    else:
-        error_body = (
-            response.json().get('error_msg')
-            if response.json().get('error_msg')
-            else str(response.json())
-            if response.json()
-            else response.text
-        )
-        error_msg = '[HTTP Error %s] %s ------ %s' % (response.status_code, endpoint, error_body)
-        raise Exception(error_msg)

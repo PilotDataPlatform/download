@@ -13,29 +13,64 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import time
+
+import jwt
 import pytest
+
+from app.config import ConfigClass
 
 pytestmark = pytest.mark.asyncio
 
 
-async def test_v1_download_status_should_return_401_when_when_token_not_verified(client):
+async def test_v1_download_status_should_return_400_when_when_token_not_verified(client):
     resp = await client.get(
         '/v1/download/status/bad_token',
+    )
+    assert resp.status_code == 400
+    assert resp.json() == {
+        'code': 400,
+        'error_msg': 'Not enough segments',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
+async def test_v1_download_status_should_return_400_when_when_token_is_not_valid(client, file_folder_jwt_token_invalid):
+    resp = await client.get(
+        f'/v1/download/status/{file_folder_jwt_token_invalid}',
+    )
+    assert resp.status_code == 400
+    assert resp.json() == {
+        'code': 400,
+        'error_msg': 'Invalid download token',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
+async def test_v1_download_status_should_return_401_when_when_token_expired(client, file_folder_jwt_token_expired):
+    resp = await client.get(
+        f'/v1/download/status/{file_folder_jwt_token_expired}',
     )
     assert resp.status_code == 401
     assert resp.json() == {
         'code': 401,
-        'error_msg': '[Invalid Token] Not enough segments',
+        'error_msg': 'Signature has expired',
         'page': 0,
         'total': 1,
         'num_of_pages': 1,
-        'result': None,
+        'result': [],
     }
 
 
-async def test_v1_download_status_should_return_404_when_job_not_found(client, jwt_token):
+async def test_v1_download_status_should_return_404_when_job_not_found(client, file_folder_jwt_token):
     resp = await client.get(
-        f'/v1/download/status/{jwt_token}',
+        f'/v1/download/status/{file_folder_jwt_token}',
     )
     assert resp.status_code == 404
     assert resp.json() == {
@@ -50,73 +85,107 @@ async def test_v1_download_status_should_return_404_when_job_not_found(client, j
 
 async def test_v1_download_status_should_return_200_when_success(
     client,
-    jwt_token,
+    file_folder_jwt_token,
     fake_job,
 ):
     resp = await client.get(
-        f'/v1/download/status/{jwt_token}',
+        f'/v1/download/status/{file_folder_jwt_token}',
     )
     assert resp.status_code == 200
     result = resp.json()['result']
-    assert result['session_id'] == '123'
-    assert result['job_id'] == 'fake_global_entity_id'
-    assert result['source'] == 'tests/routers/v1/empty.txt'
+    assert result['session_id'] == 'test_session_id'
+    assert result['job_id'] == 'test_job_id'
+    assert result['source'] == 'test/folder/file'
     assert result['action'] == 'data_download'
     assert result['status'] == 'PRE_UPLOADED'
-    assert result['operator'] == 'me'
+    assert result['operator'] == 'test_user'
     assert result['payload']['task_id'] == 'fake_global_entity_id'
-    assert result['payload']['resumable_identifier'] == 'fake_global_entity_id'
 
 
-async def test_v1_download_should_return_401_when_invalid_token(client, jwt_token, fake_job):
+async def test_v1_download_should_return_400_when_token_segment_missing(client):
     resp = await client.get(
         '/v1/download/bad_token',
+    )
+    assert resp.status_code == 400
+    assert resp.json() == {
+        'code': 400,
+        'error_msg': 'Not enough segments',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
+async def test_v1_download_should_return_400_when_when_token_is_not_valid(client, file_folder_jwt_token_invalid):
+    resp = await client.get(
+        f'/v1/download/{file_folder_jwt_token_invalid}',
+    )
+    assert resp.status_code == 400
+    assert resp.json() == {
+        'code': 400,
+        'error_msg': 'Invalid download token',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
+async def test_v1_download_should_return_401_when_when_token_expired(client, file_folder_jwt_token_expired):
+    resp = await client.get(
+        f'/v1/download/{file_folder_jwt_token_expired}',
     )
     assert resp.status_code == 401
     assert resp.json() == {
         'code': 401,
-        'error_msg': '[Invalid Token] Not enough segments',
+        'error_msg': 'Signature has expired',
         'page': 0,
         'total': 1,
         'num_of_pages': 1,
-        'result': None,
+        'result': [],
     }
 
 
-async def test_v1_download_should_return_404_when_path_not_found(client):
-    token = (
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIi'
-        'OiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0I'
-        'joxNTE2MjM5MDIyLCJmdWxsX3BhdGgiOiJhbnkiLCJzZXNzaW'
-        '9uX2lkIjoxMjMsImpvYl9pZCI6ImZha2VfZ2xvYmFsX2VudGl'
-        '0eV9pZCIsInByb2plY3RfY29kZSI6ImFueSIsIm9wZXJhdG9y'
-        'IjoibWUiLCJnZWlkIjoiZmFrZV9nbG9iYWxfZW50aXR5X2lkI'
-        'n0.l64K1z0ppK8X99G5CgEPJMR544xCcqsHBvMIyKiRWrI'
-    )
+async def test_v1_download_should_return_404_when_path_not_found(client, file_folder_jwt_token):
 
     resp = await client.get(
-        f'/v1/download/{token}',
+        f'/v1/download/{file_folder_jwt_token}',
     )
     assert resp.status_code == 404
     assert resp.json() == {
         'code': 404,
-        'error_msg': '[File not found] any.',
+        'error_msg': '[File not found] test/folder/file.',
         'page': 0,
         'total': 1,
         'num_of_pages': 1,
-        'result': None,
+        'result': [],
     }
 
 
 async def test_v1_download_should_return_200_when_success(
     client,
-    jwt_token,
     fake_job,
     httpx_mock,
 ):
+    hash_token_dict = {
+        'file_path': 'tests/routers/v1/empty.txt',
+        'issuer': 'SERVICE DATA DOWNLOAD',
+        'operator': 'test_user',
+        'session_id': 'test_session_id',
+        'job_id': 'test_job_id',
+        'container_code': 'test_container',
+        'container_type': 'test_type',
+        'payload': {},
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=ConfigClass.DOWNLOAD_KEY, algorithm='HS256').decode('utf-8')
+
     httpx_mock.add_response(method='POST', url='http://provenance_service/v1/audit-logs', json={}, status_code=200)
     resp = await client.get(
-        f'/v1/download/{jwt_token}',
+        f'/v1/download/{hash_code}',
     )
     assert resp.status_code == 200
     assert resp.text == 'file content\n'

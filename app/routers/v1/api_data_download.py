@@ -19,12 +19,15 @@ from common import LoggerFactory
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from fastapi_utils import cbv
+from jwt import ExpiredSignatureError
+from jwt.exceptions import DecodeError
 
 from app.config import ConfigClass
 from app.models.base_models import APIResponse
 from app.models.base_models import EAPIResponseCode
 from app.models.models_data_download import EDataDownloadStatus
 from app.models.models_data_download import GetDataDownloadStatusResponse
+from app.resources.download_token_manager import InvalidToken
 from app.resources.download_token_manager import verify_download_token
 from app.resources.error_handler import ECustomizedError
 from app.resources.error_handler import catch_internal
@@ -54,45 +57,51 @@ class APIDataDownload:
     )
     @catch_internal(_API_NAMESPACE)
     async def data_download_status(self, hash_code):
-        """Check download status."""
+        '''
+        Summary:
+            The API is to return the download status by the hashcode
+
+        Parameter:
+            - hash_code(str): hashcode return from /v1/download/pre
+
+        Return:
+            - 200
+        '''
 
         response = APIResponse()
         # verify hash code
-        res_verify_token = verify_download_token(hash_code)
-        if not res_verify_token[0]:
+        try:
+            res_verify_token = await verify_download_token(hash_code)
+        except ExpiredSignatureError as e:
             response.code = EAPIResponseCode.unauthorized
-            response.result = None
-            response.error_msg = res_verify_token[1]
+            response.error_msg = str(e)
             return response.json_response()
-        else:
-            res_verify_token = res_verify_token[1]
-        session_id = res_verify_token['session_id']
-        job_id = res_verify_token['job_id']
-        project_code = res_verify_token['project_code']
-        operator = res_verify_token['operator']
+        except (DecodeError, InvalidToken) as e:
+            response.code = EAPIResponseCode.bad_request
+            response.error_msg = str(e)
+            return response.json_response()
+        except Exception as e:
+            response.code = EAPIResponseCode.internal_error
+            response.error_msg = str(e)
+            return response.json_response()
+
+        # use retrieved the payload to get the job status
+        session_id = res_verify_token.get('session_id')
+        job_id = res_verify_token.get('job_id')
+        project_code = res_verify_token.get('container_code')
+        operator = res_verify_token.get('operator')
         job_fatched = await get_status(session_id, job_id, project_code, 'data_download', operator)
-        found = False
         self.__logger.info('job_fatched list: ' + str(job_fatched))
-        self.__logger.info('res_verify_token: ' + str(res_verify_token))
 
-        if len(job_fatched) > 0:
-            # find target source
-            job_fatched = [job for job in job_fatched if job['source'] == res_verify_token['full_path']]
-            if len(job_fatched) > 0:
-                found = True
-                job_fatched = job_fatched[0]
-        self.__logger.info('job_fatched: ' + str(job_fatched))
-
-        if found:
+        if len(job_fatched):
             response.code = EAPIResponseCode.success
-            response.result = job_fatched
-            return response.json_response()
+            response.result = job_fatched[0]
         else:
             self.__logger.error(f'Status not found {res_verify_token} in namespace {ConfigClass.namespace}')
             response.code = EAPIResponseCode.not_found
-            response.result = job_fatched
             response.error_msg = customized_error_template(ECustomizedError.JOB_NOT_FOUND)
-            return response.json_response()
+
+        return response.json_response()
 
     @router.get(
         '/download/{hash_code}',
@@ -101,71 +110,71 @@ class APIDataDownload:
     )
     @catch_internal(_API_NAMESPACE)
     async def data_download(self, hash_code: str):
-        """If succeed, asynchronously streams a FileResponse."""
+        '''
+        Summary:
+            The API is the actual download api to send file to the frontend
+            specified by hashcode
+
+        Parameter:
+            - hash_code(str): hashcode return from /v1/download/pre
+
+        Return:
+            - file response
+        '''
 
         response = APIResponse()
         self.__logger.info(f'Check downloading request: {hash_code}')
 
         # Verify and decode token
-        res_verify_token = verify_download_token(hash_code)
-        if not res_verify_token[0]:
+        try:
+            res_verify_token = await verify_download_token(hash_code)
+        except ExpiredSignatureError as e:
             response.code = EAPIResponseCode.unauthorized
-            response.result = None
-            response.error_msg = res_verify_token[1]
+            response.error_msg = str(e)
             return response.json_response()
-        else:
-            res_verify_token = res_verify_token[1]
+        except (DecodeError, InvalidToken) as e:
+            response.code = EAPIResponseCode.bad_request
+            response.error_msg = str(e)
+            return response.json_response()
+        except Exception as e:
+            response.code = EAPIResponseCode.internal_error
+            response.error_msg = str(e)
+            return response.json_response()
 
         # get the temporary file path we saved in token
         # and use it to fetch the actual file
-        full_path = res_verify_token['full_path']
-
-        # Use root to generate the path
-        if not os.path.exists(full_path):
-            self.__logger.error(f'File not found {full_path} in namespace {ConfigClass.namespace}')
+        file_path = res_verify_token.get('file_path')
+        if not os.path.exists(file_path):
+            self.__logger.error(f'File not found {file_path} in namespace {ConfigClass.namespace}')
             response.code = EAPIResponseCode.not_found
-            response.result = None
-            response.error_msg = customized_error_template(ECustomizedError.FILE_NOT_FOUND) % full_path
+            response.error_msg = customized_error_template(ECustomizedError.FILE_NOT_FOUND) % file_path
             return response.json_response()
 
         # this operation is needed since the file will be
         # download to nfs from minio then transfer to user
-        filename = os.path.basename(full_path)
+        filename = os.path.basename(file_path)
 
-        # Add Download Log
+        # Add download file log for project
+        # will be removed after kafka consumer setup
         await update_file_operation_logs(
-            res_verify_token['operator'],
-            full_path,
-            res_verify_token['project_code'],
+            res_verify_token.get('operator'),
+            file_path,
+            res_verify_token.get('container_code'),
         )
 
-        download_job = await get_status(
-            res_verify_token['session_id'],
-            res_verify_token['job_id'],
-            res_verify_token['project_code'],
+        # here we assume to overwrite the job with hashcode payload
+        # no matter what (if the old doesnot exist or something else happens)
+        status_update_res = await set_status(
+            res_verify_token.get('session_id'),
+            res_verify_token.get('job_id'),
+            file_path,
             'data_download',
-            res_verify_token['operator'],
+            EDataDownloadStatus.SUCCEED,
+            res_verify_token.get('contianer_type'),
+            res_verify_token.get('operator'),
+            res_verify_token.get('payload', {}),
         )
-        self.__logger.info(f'Length of download job: {len(download_job)}')
-
-        status_update_res = {}
-
-        for record in download_job:
-            self.__logger.info(f'download job: {record}')
-            self.__logger.info(f'download job type: {type(record)}')
-
-            status_update_res = await set_status(
-                res_verify_token['session_id'],
-                res_verify_token['job_id'],
-                record['source'],
-                'data_download',
-                EDataDownloadStatus.SUCCEED.name,
-                res_verify_token['project_code'],
-                res_verify_token['operator'],
-                res_verify_token['geid'],
-                record['payload'],
-            )
 
         self.__logger.debug(status_update_res)
 
-        return FileResponse(path=full_path, filename=filename)
+        return FileResponse(path=file_path, filename=filename)

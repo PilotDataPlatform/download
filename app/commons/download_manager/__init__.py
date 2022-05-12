@@ -12,15 +12,3 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from fastapi import FastAPI
-
-from app.routers import api_root
-from app.routers.v1 import api_data_download
-from app.routers.v2 import api_data_download as api_data_download_v2
-
-
-def api_registry(app: FastAPI):
-    app.include_router(api_root.router)
-    app.include_router(api_data_download.router, prefix='/v1')
-    app.include_router(api_data_download_v2.router, prefix='/v2')

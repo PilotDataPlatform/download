@@ -16,9 +16,11 @@
 import asyncio
 import os
 import shutil
+import time
 from io import BytesIO
 from uuid import uuid4
 
+import jwt
 import pytest
 import pytest_asyncio
 import sqlalchemy
@@ -38,6 +40,7 @@ from urllib3 import HTTPResponse
 environ['CONFIG_CENTER_ENABLED'] = 'false'
 
 environ['NEO4J_SERVICE'] = 'http://NEO4J_SERVICE'
+environ['METADATA_SERVICE'] = 'http://METADATA_SERVICE'
 environ['QUEUE_SERVICE'] = 'http://QUEUE_SERVICE'
 environ['PROVENANCE_SERVICE'] = 'http://PROVENANCE_SERVICE'
 environ['DATASET_SERVICE'] = 'http://DATASET_SERVICE'
@@ -54,6 +57,7 @@ environ['MINIO_TEST_PASS'] = 'MINIO_TEST_PASS'
 environ['MINIO_ACCESS_KEY'] = 'MINIO_ACCESS_KEY'
 environ['MINIO_SECRET_KEY'] = 'MINIO_SECRET_KEY'
 environ['KEYCLOAK_MINIO_SECRET'] = 'KEYCLOAK_MINIO_SECRET'
+environ['DOWNLOAD_KEY'] = 'DOWNLOAD_KEY'
 
 environ['REDIS_HOST'] = 'localhost'
 environ['REDIS_PORT'] = '6379'
@@ -137,16 +141,75 @@ def mock_settings(monkeypatch):
 
 
 @pytest.fixture
-def jwt_token():
-    return (
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OD'
-        'kwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJmdWxsX3Bh'
-        'dGgiOiJ0ZXN0cy9yb3V0ZXJzL3YxL2VtcHR5LnR4dCIsInNlc3Npb25faWQiOj'
-        'EyMywiam9iX2lkIjoiZmFrZV9nbG9iYWxfZW50aXR5X2lkIiwicHJvamVjdF9j'
-        'b2RlIjoiYW55Iiwib3BlcmF0b3IiOiJtZSIsImdlaWQiOiJmYWtlX2dsb2JhbF'
-        '9lbnRpdHlfaWQiLCJsb2NhdGlvbiI6Imh0dHA6Ly9hbnl0aGluZy5jb20vYnVj'
-        'a2V0L29iai9wYXRoIn0.mJJ7tTxyQdQcUxq3KmK_-Q6W7wvIt4qmAIT2OyfTQF8'
-    )
+def file_folder_jwt_token():
+
+    hash_token_dict = {
+        'file_path': 'test/folder/file',
+        'issuer': 'SERVICE DATA DOWNLOAD',
+        'operator': 'test_user',
+        'session_id': 'test_session_id',
+        'job_id': 'test_job_id',
+        'container_code': 'test_container',
+        'container_type': 'test_type',
+        'payload': {},
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=environ['DOWNLOAD_KEY'], algorithm='HS256').decode('utf-8')
+    return hash_code
+
+
+@pytest.fixture
+def file_folder_jwt_token_expired():
+
+    hash_token_dict = {
+        'file_path': 'test/folder/file',
+        'issuer': 'SERVICE DATA DOWNLOAD',
+        'operator': 'test_user',
+        'session_id': 'test_session_id',
+        'job_id': 'test_job_id',
+        'container_code': 'test_container',
+        'container_type': 'test_type',
+        'payload': {},
+        'iat': int(time.time()),
+        'exp': int(time.time()) - 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=environ['DOWNLOAD_KEY'], algorithm='HS256').decode('utf-8')
+    return hash_code
+
+
+@pytest.fixture
+def file_folder_jwt_token_invalid():
+
+    hash_token_dict = {
+        'issuer': 'SERVICE DATA DOWNLOAD',
+        'operator': 'test_user',
+        'session_id': 'test_session_id',
+        'job_id': 'test_job_id',
+        'container_code': 'test_container',
+        'container_type': 'test_type',
+        'payload': {},
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=environ['DOWNLOAD_KEY'], algorithm='HS256').decode('utf-8')
+    return hash_code
+
+
+@pytest.fixture
+def dataset_download_jwt_token():
+
+    hash_token_dict = {
+        'location': 'test/folder/file',
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 10,
+    }
+
+    hash_code = jwt.encode(hash_token_dict, key=environ['DOWNLOAD_KEY'], algorithm='HS256').decode('utf-8')
+    return hash_code
 
 
 @pytest.fixture
@@ -192,17 +255,14 @@ async def fake_job(monkeypatch):
     from app.resources.helpers import set_status
 
     await set_status(
-        '123',
-        'fake_global_entity_id',
-        'tests/routers/v1/empty.txt',
+        'test_session_id',
+        'test_job_id',
+        'test/folder/file',
         'data_download',
         'PRE_UPLOADED',
-        'any',
-        'me',
-        'fake_global_entity_id',
+        'test_container',
+        'test_user',
         payload={
             'task_id': 'fake_global_entity_id',
-            'resumable_identifier': 'fake_global_entity_id',
-            'parent_folder_geid': None,
         },
     )
