@@ -73,6 +73,31 @@ class APIDataDownload:
         refresh_token: Optional[str] = Header(None),
         session_id: Optional[str] = Header(None),
     ) -> JSONResponse:
+        '''
+        Summary:
+            The API serves as the pre file download operation. Since the file
+            downloading is a background job, this api will download target
+            files and zip them under the tmp folder.
+
+            Afterwards, the frontend will all the /v1/downlaod/<hashcode> to
+            download the zipped file or a single file
+
+        Payload:
+             - files(list): the list of target file will be downloaded
+             - operator(str): the user who takes the operation
+             - container_code(str): the unique code of project
+             - container_type(str): the type of container will be project/dataset
+             - approval_request_id(UUID): the unique identifier for approval
+
+        Header:
+             - authorization(str): the access token from auth service
+             - refresh_token(str): the refresh token from auth service
+             - session_id(str): the session id generate for each user login
+
+
+        Return:
+            - 200
+        '''
 
         response = APIResponse()
         minio_token = {
@@ -80,7 +105,7 @@ class APIDataDownload:
             'rt': refresh_token,
         }
 
-        # todo somehow check the container exist
+        # todo somehow check the container exist after migration
 
         # the special requirement to download the file from a set of
         # approval files. Fetch files from Postgres by approval id
@@ -121,7 +146,7 @@ class APIDataDownload:
         response.code = EAPIResponseCode.success
         return response.json_response()
 
-    @router.post('/dataset/download/pre', tags=[_API_TAG], summary='Download all files in a dataset')
+    @router.post('/dataset/download/pre', tags=[_API_TAG], summary='Download all files & schemas in a dataset')
     @catch_internal(_API_NAMESPACE)
     async def dataset_pre_download(
         self,
@@ -129,7 +154,30 @@ class APIDataDownload:
         background_tasks: BackgroundTasks,
         authorization: Optional[str] = Header(None),
         refresh_token: Optional[str] = Header(None),
+        session_id: Optional[str] = Header(None),
     ) -> JSONResponse:
+
+        '''
+        Summary:
+            The API serves as the pre download for whole dataset. All files
+            and schemas will be download and packed as zip file under tmp folder.
+
+            Afterwards, the frontend will all the /v1/downlaod/<hashcode> to
+            download the zipped file or a single file
+
+        Payload:
+            - dataset_code(list): the unique code of dataset
+            - operator(str): the user who takes the operation
+
+        Header:
+             - authorization(str): the access token from auth service
+             - refresh_token(str): the refresh token from auth service
+             - session_id(str): the session id generate for each user login
+
+        Return:
+            - 200
+        '''
+
         api_response = APIResponse()
         self.__logger.info('Called dataset download')
 
@@ -138,42 +186,14 @@ class APIDataDownload:
             'rt': refresh_token,
         }
 
-        # query = {
-        #     'start_label': 'Dataset',
-        #     'end_labels': ['File', 'Folder'],
-        #     'query': {
-        #         'start_params': {
-        #             'global_entity_id': data.dataset_geid,
-        #         },
-        #         'end_params': {
-        #             'archived': False,
-        #         },
-        #     },
-        # }
-
-        # async with httpx.AsyncClient() as client:
-        #     resp = await client.post(ConfigClass.NEO4J_SERVICE_V2 + 'relations/query', json=query)
-        #     res = await client.get(ConfigClass.NEO4J_SERVICE + 'nodes/geid/' + data.dataset_geid)
-        #     if resp.status_code != 200 or res.status_code != 200:
-        #         error_msg = 'Error when getting node for neo4j'
-        #         api_response.error_msg = error_msg
-        #         api_response.code = EAPIResponseCode.internal_error
-        #         return api_response.json_response()
-
-        #     nodes = resp.json()['results']
-        #     dataset = res.json()
-        #     dataset_code = dataset[0]['code']
-
-        # files = []
-        # for node in nodes:
-        #     files.append({'geid': node['global_entity_id']})
+        # TODO somehow check the dataset exist after migration
 
         download_client = await create_dataset_download_client(
             minio_token,
             data.operator,
             data.dataset_code,
             'dataset',
-            data.session_id,
+            session_id,
         )
         hash_code = await download_client.generate_hash_code()
         status_result = await download_client.set_status(EDataDownloadStatus.ZIPPING, payload={'hash_code': hash_code})
@@ -196,7 +216,7 @@ class APIDataDownload:
 
         '''
         Summary:
-            This api is different with others. This is for dataset version download. The reason
+            This api is different with others. This is for dataset *version* download. The reason
             is the dataset version is not save as file node instead it has a seperate table to
             keep track the version. And this version is already zipped.
 

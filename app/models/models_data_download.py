@@ -41,7 +41,6 @@ class DatasetPrePOST(BaseModel):
 
     dataset_code: str
     operator: str
-    session_id: str
 
 
 class PreSignedDownload(BaseModel):

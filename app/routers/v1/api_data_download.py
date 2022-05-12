@@ -56,7 +56,16 @@ class APIDataDownload:
     )
     @catch_internal(_API_NAMESPACE)
     async def data_download_status(self, hash_code):
-        """Check download status."""
+        '''
+        Summary:
+            The API is to return the download status by the hashcode
+
+        Parameter:
+            - hash_code(str): hashcode return from /v1/download/pre
+
+        Return:
+            - 200
+        '''
 
         response = APIResponse()
         # verify hash code
@@ -96,7 +105,17 @@ class APIDataDownload:
     )
     @catch_internal(_API_NAMESPACE)
     async def data_download(self, hash_code: str):
-        """If succeed, asynchronously streams a FileResponse."""
+        '''
+        Summary:
+            The API is the actual download api to send file to the frontend
+            specified by hashcode
+
+        Parameter:
+            - hash_code(str): hashcode return from /v1/download/pre
+
+        Return:
+            - file response
+        '''
 
         response = APIResponse()
         self.__logger.info(f'Check downloading request: {hash_code}')
