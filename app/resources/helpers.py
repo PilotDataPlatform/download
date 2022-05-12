@@ -139,7 +139,7 @@ async def set_status(
         'job_id': job_id,
         'source': source,
         'action': action,
-        'status': target_status.name,
+        'status': str(target_status),
         'project_code': project_code,
         'operator': operator,
         'payload': payload,

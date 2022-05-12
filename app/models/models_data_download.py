@@ -153,3 +153,6 @@ class EDataDownloadStatus(Enum):
     ZIPPING = 3
     READY_FOR_DOWNLOADING = 5
     SUCCEED = 7
+
+    def __str__(self):
+        return '%s' % self.name

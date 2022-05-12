@@ -22,6 +22,7 @@ from app.commons.download_manager.file_download_manager import FileDownloadClien
 from app.commons.download_manager.file_download_manager import (
     create_file_download_client,
 )
+from app.models.models_data_download import EDataDownloadStatus
 from app.resources.error_handler import APIException
 
 pytestmark = pytest.mark.asyncio
@@ -103,7 +104,7 @@ async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mo
     )
     with mock.patch.object(FileDownloadClient, 'set_status') as fake_set:
         await download_client.background_worker('fake_hash')
-    fake_set.assert_called_once_with('READY_FOR_DOWNLOADING', payload={'hash_code': 'fake_hash'})
+    fake_set.assert_called_once_with(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': 'fake_hash'})
 
 
 async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
@@ -144,7 +145,9 @@ async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
     )
     with mock.patch.object(FileDownloadClient, 'set_status') as fake_set:
         await download_client.background_worker('fake_hash')
-    fake_set.assert_called_once_with('CANCELLED', payload={'error_msg': 'string indices must be integers'})
+    fake_set.assert_called_once_with(
+        EDataDownloadStatus.CANCELLED, payload={'error_msg': 'string indices must be integers'}
+    )
 
 
 @mock.patch('app.commons.service_connection.minio_client.Minio')
@@ -154,7 +157,7 @@ async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
         (
             'any',
             {
-                'status': 'CANCELLED',
+                'status': EDataDownloadStatus.CANCELLED,
                 'payload': {
                     'error_msg': (
                         'S3 operation failed; code: any, message: any msg'
@@ -163,7 +166,7 @@ async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
                 },
             },
         ),
-        ('NoSuchKey', {'status': 'READY_FOR_DOWNLOADING', 'payload': {'hash_code': 'fake_hash'}}),
+        ('NoSuchKey', {'status': EDataDownloadStatus.READY_FOR_DOWNLOADING, 'payload': {'hash_code': 'fake_hash'}}),
     ],
 )
 async def test_zip_worker_raise_exception_when_minio_return_error(mock_minio, httpx_mock, exception_code, result):
