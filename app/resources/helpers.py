@@ -58,6 +58,7 @@ async def get_files_folder_recursive(
         'archived': False,
         'parent_path': parent_path,
         'owner': owner,
+        'type': 'file',
     }
 
     url = ConfigClass.METADATA_SERVICE + 'items/search/'

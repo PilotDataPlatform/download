@@ -60,7 +60,7 @@ async def test_download_client_add_file(httpx_mock):
     )
 
     download_client = await create_file_download_client(
-        files=[{'geid': 'geid_1'}],
+        files=[{'id': 'geid_1'}],
         auth_token={'at': 'token', 'rt': 'refresh_token'},
         operator='me',
         container_code='any_code',
@@ -95,7 +95,7 @@ async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mo
     httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
 
     download_client = await create_file_download_client(
-        files=[{'geid': 'geid_1'}],
+        files=[{'id': 'geid_1'}],
         auth_token={'at': 'token', 'rt': 'refresh_token'},
         operator='me',
         container_code='any_code',
@@ -136,7 +136,7 @@ async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
     m.side_effect = Exception
 
     download_client = await create_file_download_client(
-        files=[{'geid': 'geid_1'}],
+        files=[{'id': 'geid_1'}],
         auth_token='token',
         operator='me',
         container_code='any_code',
@@ -195,7 +195,7 @@ async def test_zip_worker_raise_exception_when_minio_return_error(mock_minio, ht
     mock_minio().fget_object.side_effect = [minio_exception]
 
     download_client = await create_file_download_client(
-        files=[{'geid': 'geid_1'}],
+        files=[{'id': 'geid_1'}],
         auth_token={'at': 'token', 'rt': 'refresh_token'},
         operator='me',
         container_code='any_code',

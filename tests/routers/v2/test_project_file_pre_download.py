@@ -43,7 +43,7 @@ async def test_v2_download_pre_return_404_when_fail_to_add_files_to_zip(
             'project_id': 'any',
             'container_code': 'fake_geid',
             'container_type': 'project',
-            'files': [{'geid': 'fake_geid'}],
+            'files': [{'id': 'fake_geid'}],
         },
     )
     assert resp.status_code == 404
@@ -86,7 +86,7 @@ async def test_v2_download_pre_return_200_when_approval_request_id(client, httpx
             'project_id': 'any',
             'container_code': 'fake_code',
             'container_type': 'project',
-            'files': [{'geid': 'fake_geid'}],
+            'files': [{'id': 'fake_geid'}],
             'approval_request_id': '67e6bf62-be82-4401-9ec0-7d49ee047fe7',
         },
     )
@@ -132,7 +132,7 @@ async def test_v2_download_pre_return_200_when_label_is_not_Folder(client, httpx
             'project_id': 'any',
             'container_code': 'any_project_code',
             'container_type': 'project',
-            'files': [{'geid': 'fake_geid'}],
+            'files': [{'id': 'fake_geid'}],
         },
     )
 
@@ -196,7 +196,7 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(client, httpx_mock
             'project_id': 'any',
             'container_code': 'fake_project_code',
             'container_type': 'project',
-            'files': [{'geid': 'fake_geid'}],
+            'files': [{'id': 'fake_geid'}],
         },
     )
 

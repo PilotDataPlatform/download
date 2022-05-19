@@ -81,7 +81,7 @@ async def create_file_download_client(
     # add files into the list. It will check if we try to
     # download the empty project folder
     for file in files:
-        await download_client.add_files_to_list(file['geid'])
+        await download_client.add_files_to_list(file['id'])
 
     if len(download_client.files_to_zip) < 1 and container_type == 'project':
         error_msg = '[Invalid file amount] must greater than 0'
@@ -143,24 +143,24 @@ class FileDownloadClient:
             payload=payload,
         )
 
-    async def add_files_to_list(self, geid: str) -> None:
+    async def add_files_to_list(self, _id: str) -> None:
         '''
         Summary:
-            The function will add the file/folder with input geid into list.
-            if input geid points to a folder then it will call the metadata
+            The function will add the file/folder with input _id into list.
+            if input _id points to a folder then it will call the metadata
             api to get ALL files under it and its subfolders
 
         Parameter:
-            - geid(str): the uuid of file/folder
+            - _id(str): the uuid of file/folder
 
         Return:
             - None
         '''
-        ff_object = await get_files_folder_by_id(geid)
+        ff_object = await get_files_folder_by_id(_id)
 
         file_list = []
         if 'folder' == ff_object.get('type'):
-            self.logger.info(f'Getting folder from geid: {geid}')
+            self.logger.info(f'Getting folder from geid: {_id}')
 
             # conner case: some of first level folder dont have any parent path(None)
             if ff_object.get('parent_path'):
@@ -177,9 +177,7 @@ class FileDownloadClient:
             )
 
             # only take the file for downloading
-            for x in folder_tree:
-                if x.get('type') == 'file':
-                    file_list.append(x)
+            file_list = folder_tree
 
         else:
             file_list = [ff_object]
