@@ -84,7 +84,8 @@ class APIDataDownload:
             download the zipped file or a single file
 
         Payload:
-             - files(list): the list of target file will be downloaded
+             - files(list): the list of target id file will be
+                downloaded (either in project or dataset)
              - operator(str): the user who takes the operation
              - container_code(str): the unique code of project
              - container_type(str): the type of container will be project/dataset

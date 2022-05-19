@@ -32,7 +32,7 @@ class ResourceNotFound(Exception):
 
 
 async def get_files_folder_recursive(
-    container_code: str, container_type: str, owner: str, zone: int = 0, file_type: str = None, parent_path: str = ''
+    container_code: str, container_type: str, owner: str, zone: int = 0, parent_path: str = ''
 ) -> List[dict]:
     '''
     Summary:
@@ -44,7 +44,6 @@ async def get_files_folder_recursive(
         - container_type(string): the type can project or dataset
         - owner(str): the owner of file/object
         - zone(int) default=0: 0 for greenroom, 1 for core
-        - file_type(str) default=None: the file type can be file or folder
         - parent_path(str) default='': the parent folder path of target file/folder
 
     Return:
@@ -60,8 +59,6 @@ async def get_files_folder_recursive(
         'parent_path': parent_path,
         'owner': owner,
     }
-    if file_type:
-        payload.update({'type': file_type})
 
     url = ConfigClass.METADATA_SERVICE + 'items/search/'
     async with httpx.AsyncClient() as client:

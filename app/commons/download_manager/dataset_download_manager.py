@@ -165,13 +165,13 @@ class DatasetDownloadClient(FileDownloadClient):
             dataset_code,
             'dataset',
             self.operator,
-            file_type='file',
         )
         # only take the file for downloading
         for x in folder_tree:
-            # flatten the storage url
-            x.update({'location': x.get('storage', {}).get('location_uri')})
-            self.files_to_zip.append(x)
+            if x.get('type') == 'file':
+                # flatten the storage url
+                x.update({'location': x.get('storage', {}).get('location_uri')})
+                self.files_to_zip.append(x)
 
     async def background_worker(self, hash_code: str) -> None:
         '''

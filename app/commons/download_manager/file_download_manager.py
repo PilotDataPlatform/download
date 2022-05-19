@@ -156,23 +156,30 @@ class FileDownloadClient:
         Return:
             - None
         '''
-
         ff_object = await get_files_folder_by_id(geid)
 
         file_list = []
         if 'folder' == ff_object.get('type'):
             self.logger.info(f'Getting folder from geid: {geid}')
 
+            # conner case: some of first level folder dont have any parent path(None)
+            if ff_object.get('parent_path'):
+                parent_path = ff_object.get('parent_path') + '.' + ff_object.get('name')
+            else:
+                parent_path = ff_object.get('name')
+
             folder_tree = await get_files_folder_recursive(
                 self.container_code,
                 self.container_type,
                 ff_object.get('owner'),
                 zone=ff_object.get('zone'),
-                file_type='file',
-                parent_path=ff_object.get('parent_path') + '.' + ff_object.get('name'),
+                parent_path=parent_path,
             )
+
             # only take the file for downloading
-            file_list = folder_tree
+            for x in folder_tree:
+                if x.get('type') == 'file':
+                    file_list.append(x)
 
         else:
             file_list = [ff_object]
@@ -199,11 +206,11 @@ class FileDownloadClient:
             - str: hash code
         '''
 
-        if len(self.files_to_zip) > 1:
-            self.result_file_name = self.tmp_folder + '.zip'
-        else:
+        if len(self.files_to_zip) == 1 and self.container_type == 'project':
             location = self.files_to_zip[0]['location']
             self.result_file_name = self.tmp_folder + '/' + Minio_Client.parse_minio_location(location)[1]
+        else:
+            self.result_file_name = self.tmp_folder + '.zip'
 
         return await generate_token(
             self.container_code,
@@ -330,7 +337,7 @@ class FileDownloadClient:
         await self._file_download_worker(hash_code)
 
         # zip the files under the tmp folder if we have number > 1
-        if len(self.files_to_zip) > 1:
+        if len(self.files_to_zip) > 1 or self.container_type == 'dataset':
             await self._zip_worker()
 
         # add the activity logs
