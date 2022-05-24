@@ -32,6 +32,8 @@ from app.commons.download_manager.dataset_download_manager import (
 from app.commons.download_manager.file_download_manager import (
     create_file_download_client,
 )
+from app.commons.project_client import ProjectClient
+from app.commons.project_exceptions import ProjectNotFoundException
 from app.commons.service_connection.minio_client import get_minio_client
 from app.config import ConfigClass
 from app.models.base_models import APIResponse
@@ -57,6 +59,7 @@ class APIDataDownload:
 
     def __init__(self):
         self.__logger = LoggerFactory('api_data_download').get_logger()
+        self.project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
 
     @router.post(
         '/download/pre/',
@@ -108,6 +111,14 @@ class APIDataDownload:
         }
 
         # todo somehow check the container exist after migration
+        try:
+            if data.container_type == 'project':
+                _ = await self.project_client.get(code=data.container_code)
+
+        except ProjectNotFoundException as e:
+            response.error_msg = e.error_msg
+            response.code = EAPIResponseCode.unauthorized
+            return response.json_response()
 
         # the special requirement to download the file from a set of
         # approval files. Fetch files from Postgres by approval id
