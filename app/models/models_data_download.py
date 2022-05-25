@@ -33,7 +33,7 @@ class PreDataDownloadPOST(BaseModel):
     operator: str
     container_code: str
     container_type: str
-    approval_request_id: Optional[UUID]
+    approval_request_id: Optional[UUID] = None
 
 
 class DatasetPrePOST(BaseModel):
