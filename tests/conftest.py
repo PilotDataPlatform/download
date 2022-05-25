@@ -46,6 +46,7 @@ environ['PROVENANCE_SERVICE'] = 'http://PROVENANCE_SERVICE'
 environ['DATASET_SERVICE'] = 'http://DATASET_SERVICE'
 environ['UTILITY_SERVICE'] = 'http://UTILITY_SERVICE'
 environ['DATA_OPS_UTIL'] = 'http://DATA_OPS_UTIL'
+environ['PROJECT_SERVICE'] = 'http://PROJECT_SERVICE'
 
 environ['CORE_ZONE_LABEL'] = 'Core'
 environ['GREEN_ZONE_LABEL'] = 'Greenroom'

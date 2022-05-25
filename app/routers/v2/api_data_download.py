@@ -17,6 +17,8 @@ from typing import Optional
 from typing import Union
 
 from common import LoggerFactory
+from common import ProjectClient
+from common import ProjectNotFoundException
 from fastapi import APIRouter
 from fastapi import BackgroundTasks
 from fastapi import Header
@@ -32,8 +34,6 @@ from app.commons.download_manager.dataset_download_manager import (
 from app.commons.download_manager.file_download_manager import (
     create_file_download_client,
 )
-from app.commons.project_client import ProjectClient
-from app.commons.project_exceptions import ProjectNotFoundException
 from app.commons.service_connection.minio_client import get_minio_client
 from app.config import ConfigClass
 from app.models.base_models import APIResponse
@@ -117,7 +117,7 @@ class APIDataDownload:
 
         except ProjectNotFoundException as e:
             response.error_msg = e.error_msg
-            response.code = EAPIResponseCode.unauthorized
+            response.code = EAPIResponseCode.not_found
             return response.json_response()
 
         # the special requirement to download the file from a set of
