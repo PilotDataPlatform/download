@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     DATA_OPS_UTIL: str
     DATASET_SERVICE: str
     METADATA_SERVICE: str
+    PROJECT_SERVICE: str
 
     # minio
     MINIO_OPENID_CLIENT: str
@@ -75,6 +76,7 @@ class Settings(BaseSettings):
     # Redis Service
     REDIS_HOST: str
     REDIS_PORT: int
+    REDIS_USER: str = 'default'
     REDIS_DB: int
     REDIS_PASSWORD: str
 
@@ -110,8 +112,12 @@ class Settings(BaseSettings):
 
         # minio
         self.MINIO_TMP_PATH = self.ROOT_PATH + '/tmp/'
-
+        # postgres
         self.RDS_DB_URI = self.RDS_DB_URI.replace('postgresql', 'postgresql+asyncpg')
+        # redis
+        self.REDIS_URL = (
+            f'redis://{self.REDIS_USER}:{self.REDIS_PASSWORD}@{self.REDIS_HOST}' + f':{self.REDIS_PORT}/{self.REDIS_DB}'
+        )
 
 
 ConfigClass = Settings()

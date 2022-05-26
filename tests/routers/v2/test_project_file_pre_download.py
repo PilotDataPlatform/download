@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
+from common import ProjectNotFoundException
 
 pytestmark = pytest.mark.asyncio
 
@@ -24,10 +25,45 @@ async def test_v2_download_pre_return_422_when_container_code_and_type_are_missi
     assert resp.status_code == 422
 
 
+async def test_v2_download_pre_return_404_when_project_not_exist(
+    client,
+    httpx_mock,
+    mocker,
+):
+
+    m = mocker.patch('common.ProjectClient.get', return_value={})
+    m.side_effect = ProjectNotFoundException
+
+    resp = await client.post(
+        '/v2/download/pre/',
+        json={
+            'session_id': '123',
+            'operator': 'me',
+            'project_id': 'any',
+            'container_code': 'fake_geid',
+            'container_type': 'project',
+            'files': [{'id': 'fake_geid'}],
+        },
+    )
+    assert resp.status_code == 404
+    assert resp.json() == {
+        'code': 404,
+        'error_msg': 'Project not found',
+        'page': 0,
+        'total': 1,
+        'num_of_pages': 1,
+        'result': [],
+    }
+
+
 async def test_v2_download_pre_return_404_when_fail_to_add_files_to_zip(
     client,
     httpx_mock,
+    mocker,
 ):
+
+    mocker.patch('common.ProjectClient.get', return_value={'any': 'any', 'global_entity_id': 'fake_global_entity_id'})
+
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/item/fake_geid/',
@@ -57,7 +93,16 @@ async def test_v2_download_pre_return_404_when_fail_to_add_files_to_zip(
     }
 
 
-async def test_v2_download_pre_return_200_when_approval_request_id(client, httpx_mock, metadata, mock_minio):
+async def test_v2_download_pre_return_200_when_approval_request_id(
+    client,
+    httpx_mock,
+    metadata,
+    mock_minio,
+    mocker,
+):
+
+    mocker.patch('common.ProjectClient.get', return_value={'any': 'any', 'global_entity_id': 'fake_global_entity_id'})
+
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/item/fake_geid/',
@@ -102,7 +147,16 @@ async def test_v2_download_pre_return_200_when_approval_request_id(client, httpx
     assert result['payload']['hash_code']
 
 
-async def test_v2_download_pre_return_200_when_label_is_not_Folder(client, httpx_mock, metadata, mock_minio):
+async def test_v2_download_pre_return_200_when_label_is_not_Folder(
+    client,
+    httpx_mock,
+    metadata,
+    mock_minio,
+    mocker,
+):
+
+    mocker.patch('common.ProjectClient.get', return_value={'any': 'any', 'global_entity_id': 'fake_global_entity_id'})
+
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/item/fake_geid/',
@@ -147,7 +201,16 @@ async def test_v2_download_pre_return_200_when_label_is_not_Folder(client, httpx
     assert result['payload']['hash_code']
 
 
-async def test_v2_download_pre_return_200_when_type_is_Folder(client, httpx_mock, metadata, mock_minio):
+async def test_v2_download_pre_return_200_when_type_is_Folder(
+    client,
+    httpx_mock,
+    metadata,
+    mock_minio,
+    mocker,
+):
+
+    mocker.patch('common.ProjectClient.get', return_value={'any': 'any', 'global_entity_id': 'fake_global_entity_id'})
+
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/item/fake_geid/',
