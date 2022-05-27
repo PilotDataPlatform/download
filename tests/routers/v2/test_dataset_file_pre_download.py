@@ -72,10 +72,10 @@ async def test_v2_dataset_download_pre_return_200_when_success(client, httpx_moc
 
     # temporary add the this mock. Remove it after migration
     httpx_mock.add_response(
-        method='POST',
-        url='http://neo4j_service/v1/neo4j/nodes/Dataset/query',
-        json=[{'global_entity_id': 'test_geid'}],
+        method='GET',
+        url='http://dataset_service/v1/dataset-peek/' + dataset_code,
         status_code=200,
+        json={'result': {'id': 'fake_id'}},
     )
 
     mocker.patch(
@@ -121,10 +121,10 @@ async def test_v2_dataset_download_pre_empty_dataset_return_200_when_success(cli
 
     # temporary add the this mock. Remove it after migration
     httpx_mock.add_response(
-        method='POST',
-        url='http://neo4j_service/v1/neo4j/nodes/Dataset/query',
-        json=[{'global_entity_id': 'test_geid'}],
+        method='GET',
+        url='http://dataset_service/v1/dataset-peek/' + dataset_code,
         status_code=200,
+        json={'result': {'id': 'fake_id'}},
     )
 
     mocker.patch(

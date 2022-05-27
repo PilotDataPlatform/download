@@ -351,11 +351,10 @@ class FileDownloadClient:
         if self.container_type == 'dataset':
 
             # REMOVE THIS AFTER MIGRATION
-            payload = {'code': self.container_code}
-            node_query_url = ConfigClass.NEO4J_SERVICE + 'nodes/Dataset/query'
+            node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + self.container_code
             with httpx.Client() as client:
-                response = client.post(node_query_url, json=payload)
-            dataset_geid = response.json()[0].get('global_entity_id')
+                response = client.get(node_query_url)
+            dataset_geid = response.json().get('result', {}).get('id')
 
             filenames = ['/'.join(i['location'].split('/')[7:]) for i in self.files_to_zip]
             await self.update_activity_log(
