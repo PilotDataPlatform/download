@@ -52,7 +52,6 @@ class Settings(BaseSettings):
     GREEN_ZONE_LABEL: str
 
     # services
-    NEO4J_SERVICE: str
     PROVENANCE_SERVICE: str
     QUEUE_SERVICE: str
     UTILITY_SERVICE: str
@@ -101,8 +100,6 @@ class Settings(BaseSettings):
         super().__init__()
 
         # services
-        self.NEO4J_SERVICE_V2 = self.NEO4J_SERVICE + '/v2/neo4j/'
-        self.NEO4J_SERVICE += '/v1/neo4j/'
         self.PROVENANCE_SERVICE += '/v1/'
         self.QUEUE_SERVICE += '/v1/'
         self.DATA_OPS_UT_V2 = self.DATA_OPS_UTIL + '/v2/'

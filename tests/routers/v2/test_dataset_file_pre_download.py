@@ -18,31 +18,6 @@ import pytest
 pytestmark = pytest.mark.asyncio
 
 
-# async def test_v2_dataset_download_pre_return_500_when_query_not_found(
-#     client,
-#     httpx_mock,
-# ):
-#     dataset_geid = 'fake_dataset_geid'
-#     httpx_mock.add_response(
-#         method='POST', url='http://neo4j_service/v2/neo4j/relations/query', json={}, status_code=404
-#     )
-#     httpx_mock.add_response(
-#         method='GET', url=f'http://neo4j_service/v1/neo4j/nodes/geid/{dataset_geid}', json=[], status_code=404
-#     )
-#     resp = await client.post(
-#         '/v2/dataset/download/pre', json={'session_id': 1234, 'operator': 'me', 'dataset_geid': dataset_geid}
-#     )
-#     assert resp.status_code == 500
-#     assert resp.json() == {
-#         'code': 500,
-#         'error_msg': 'Error when getting node for neo4j',
-#         'page': 0,
-#         'total': 1,
-#         'num_of_pages': 1,
-#         'result': [],
-#     }
-
-
 async def test_v2_dataset_download_pre_return_200_when_success(client, httpx_mock, mock_minio, mocker):
     dataset_code = 'fake_project_code'
 
