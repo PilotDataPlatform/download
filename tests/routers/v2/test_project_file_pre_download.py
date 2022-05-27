@@ -248,6 +248,8 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(
         },
     )
 
+    mocker.patch('app.commons.download_manager.file_download_manager.FileDownloadClient._zip_worker', return_value={})
+
     httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
     httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
 

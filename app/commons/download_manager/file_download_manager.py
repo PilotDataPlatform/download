@@ -113,6 +113,11 @@ class FileDownloadClient:
         self.container_type = container_type
         self.file_geids_to_include = file_geids_to_include
 
+        # here the bool is to handle the conner case that if user try to
+        # download the folder where only has one file, the api should still
+        # stream back the zip file
+        self.folder_download = False
+
         self.logger = LoggerFactory('api_data_download').get_logger()
 
     async def set_status(self, status: EDataDownloadStatus, payload: dict):
@@ -161,6 +166,10 @@ class FileDownloadClient:
         file_list = []
         if 'folder' == ff_object.get('type'):
             self.logger.info(f'Getting folder from geid: {_id}')
+
+            # raise the flag to True and later the zip_work will pack
+            # the file(s) anyway
+            self.folder_download = True
 
             # conner case: some of first level folder dont have any parent path(None)
             if ff_object.get('parent_path'):
@@ -335,7 +344,7 @@ class FileDownloadClient:
         await self._file_download_worker(hash_code)
 
         # zip the files under the tmp folder if we have number > 1
-        if len(self.files_to_zip) > 1 or self.container_type == 'dataset':
+        if self.folder_download or len(self.files_to_zip) > 1:
             await self._zip_worker()
 
         # add the activity logs
