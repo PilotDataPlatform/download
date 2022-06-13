@@ -213,7 +213,7 @@ class FileDownloadClient:
             - str: hash code
         '''
 
-        if len(self.files_to_zip) == 1 and self.container_type == 'project':
+        if len(self.files_to_zip) == 1:
             location = self.files_to_zip[0]['location']
             self.result_file_name = self.tmp_folder + '/' + Minio_Client.parse_minio_location(location)[1]
         else:
