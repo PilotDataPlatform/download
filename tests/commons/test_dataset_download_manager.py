@@ -26,7 +26,7 @@ async def test_download_client_without_files(httpx_mock, mock_minio):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=any_code'
-        '&container_type=dataset&zone=0&recursive=true&archived=false&parent_'
+        '&container_type=dataset&zone=1&recursive=true&archived=false&parent_'
         'path=&owner=me&type=file',
         json={'result': []},
     )
@@ -46,7 +46,7 @@ async def test_download_client_add_file(httpx_mock):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=any_code'
-        '&container_type=dataset&zone=0&recursive=true&archived=false&parent_'
+        '&container_type=dataset&zone=1&recursive=true&archived=false&parent_'
         'path=&owner=me&type=file',
         json={
             'result': [
@@ -81,7 +81,7 @@ async def test_download_dataset_add_schemas(httpx_mock):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=any_code'
-        '&container_type=dataset&zone=0&recursive=true&archived=false&parent_'
+        '&container_type=dataset&zone=1&recursive=true&archived=false&parent_'
         'path=&owner=me&type=file',
         json={'result': []},
     )
