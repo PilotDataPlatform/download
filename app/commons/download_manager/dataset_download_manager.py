@@ -22,6 +22,7 @@ import httpx
 
 from app.commons.download_manager.file_download_manager import FileDownloadClient
 from app.config import ConfigClass
+from app.models.models_data_download import EDataDownloadStatus
 from app.resources.download_token_manager import generate_token
 from app.resources.helpers import get_files_folder_recursive
 
@@ -203,6 +204,9 @@ class DatasetDownloadClient(FileDownloadClient):
         # here is different since the dataset will have the default schema
         # no matter how, we will zip all the file under the temp folder
         await self._zip_worker()
+
+        # NOTE: the status of job will be updated ONLY after the zip worker
+        await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': hash_code})
 
         # this might need to move into the download api not in the pre
         await self.update_activity_log(

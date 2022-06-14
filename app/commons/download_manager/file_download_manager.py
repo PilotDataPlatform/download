@@ -263,11 +263,11 @@ class FileDownloadClient:
                 await mc.fget_object(obj, self.tmp_folder)
                 self.logger.info(f'File downloaded: {str(obj)}')
 
-            await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': hash_code})
         except Exception as e:
             self.logger.error('Error in background job: ' + (str(e)))
             payload = {'error_msg': str(e)}
             await self.set_status(EDataDownloadStatus.CANCELLED, payload=payload)
+            raise Exception(str(e))
         finally:
             self.logger.info('Start to unlock the nodes')
             await bulk_lock_operation(lock_keys, 'read', lock=False)
@@ -346,6 +346,9 @@ class FileDownloadClient:
         # zip the files under the tmp folder if we have number > 1
         if self.folder_download or len(self.files_to_zip) > 1:
             await self._zip_worker()
+
+        # NOTE: the status of job will be updated ONLY after the zip worker
+        await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': hash_code})
 
         # add the activity logs
         if self.container_type == 'dataset':

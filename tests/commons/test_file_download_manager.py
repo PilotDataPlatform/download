@@ -143,8 +143,13 @@ async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
         container_type='project',
         session_id='1234',
     )
-    with mock.patch.object(FileDownloadClient, 'set_status') as fake_set:
-        await download_client.background_worker('fake_hash')
+
+    try:
+        with mock.patch.object(FileDownloadClient, 'set_status') as fake_set:
+            await download_client.background_worker('fake_hash')
+    except Exception as e:
+        assert str(e) == 'string indices must be integers'
+
     fake_set.assert_called_once_with(
         EDataDownloadStatus.CANCELLED, payload={'error_msg': 'string indices must be integers'}
     )
@@ -202,6 +207,11 @@ async def test_zip_worker_raise_exception_when_minio_return_error(mock_minio, ht
         container_type='project',
         session_id='1234',
     )
-    with mock.patch.object(FileDownloadClient, 'set_status') as fake_set:
-        await download_client.background_worker('fake_hash')
+
+    try:
+        with mock.patch.object(FileDownloadClient, 'set_status') as fake_set:
+            await download_client.background_worker('fake_hash')
+    except Exception as e:
+        assert str(e) == result['payload']['error_msg']
+
     fake_set.assert_called_once_with(result['status'], payload=result['payload'])
