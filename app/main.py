@@ -59,7 +59,7 @@ def create_app():
 
     api_registry(app)
 
-    instrument_app(app)
+    # instrument_app(app)
 
     return app
 
