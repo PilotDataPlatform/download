@@ -165,6 +165,7 @@ class DatasetDownloadClient(FileDownloadClient):
             dataset_code,
             'dataset',
             self.operator,
+            zone=1,
         )
         # only take the file for downloading
         for x in folder_tree:
