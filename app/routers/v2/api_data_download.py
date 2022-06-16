@@ -267,19 +267,20 @@ class APIDataDownload:
 
         try:
             boto3_client = await get_boto3_client(
-                ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
+                ConfigClass.MINIO_ENDPOINT, token=authorization, https=ConfigClass.MINIO_HTTPS
             )
 
-            presigned_url = boto3_client.get_download_presigned_url(bucket, file_path)
+            presigned_url = await boto3_client.get_download_presigned_url(bucket, file_path)
 
             # mc = await get_minio_client(authorization, refresh_token)
             # result = await mc.stat_object(bucket, file_path)
             # headers = {'Content-Length': str(result.size), 'Content-Disposition': f'attachment; filename={filename}'}
             # response = await mc.get_object(bucket, file_path)
         except Exception as e:
-            error_msg = f'Error getting file from minio: {str(e)}'
+            error_msg = f'Error getting file: {str(e)}'
             self.__logger.error(error_msg)
             api_response.error_msg = error_msg
+            api_response.code = EAPIResponseCode.bad_request
             return api_response.json_response()
 
         return RedirectResponse(presigned_url)

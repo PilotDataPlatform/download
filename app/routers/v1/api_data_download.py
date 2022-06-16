@@ -148,7 +148,6 @@ class APIDataDownload:
         # 2. if number = 1, the path presigned url from object storage. and
         #    the response will be 200 with file stream
         file_path = res_verify_token.get('file_path')
-        response = None
         if file_path.startswith('http'):
             response = RedirectResponse(file_path)
         else:

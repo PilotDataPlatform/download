@@ -28,7 +28,7 @@ from app.resources.error_handler import APIException
 pytestmark = pytest.mark.asyncio
 
 
-async def test_download_client_without_files_should_raise_exception(httpx_mock, mock_minio):
+async def test_download_client_without_files_should_raise_exception(httpx_mock, mock_boto3):
     with pytest.raises(APIException):
         await create_file_download_client(
             files=[],
@@ -72,7 +72,7 @@ async def test_download_client_add_file(httpx_mock):
     assert download_client.files_to_zip[0].get('id') == 'geid_1'
 
 
-async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mock, mock_minio):
+async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mock, mock_boto3):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/item/geid_1/',
@@ -155,7 +155,7 @@ async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
     )
 
 
-@mock.patch('app.commons.service_connection.minio_client.Minio')
+# @mock.patch('common.object_storage_adaptor.boto3_client.Boto3Client')
 @pytest.mark.parametrize(
     'exception_code,result',
     [
@@ -171,10 +171,23 @@ async def test_zip_worker_set_status_CANCELLED_when_success(httpx_mock, mocker):
                 },
             },
         ),
-        ('NoSuchKey', {'status': EDataDownloadStatus.READY_FOR_DOWNLOADING, 'payload': {'hash_code': 'fake_hash'}}),
+        (
+            'NoSuchKey',
+            {
+                'status': EDataDownloadStatus.CANCELLED,
+                'payload': {
+                    'error_msg': (
+                        'S3 operation failed; code: NoSuchKey, message: any msg'
+                        ', resource: any, request_id: any, host_id: any'
+                    )
+                },
+            },
+        ),
     ],
 )
-async def test_zip_worker_raise_exception_when_minio_return_error(mock_minio, httpx_mock, exception_code, result):
+async def test_zip_worker_raise_exception_when_minio_return_error(
+    mock_boto3, httpx_mock, exception_code, result, mocker
+):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/item/geid_1/',
@@ -194,10 +207,11 @@ async def test_zip_worker_raise_exception_when_minio_return_error(mock_minio, ht
     )
     httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', status_code=200, json={})
     httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', status_code=200, json={})
-    minio_exception = minio.error.S3Error(
+
+    m = mocker.patch('common.object_storage_adaptor.boto3_client.Boto3Client.downlaod_object', return_value=[])
+    m.side_effect = minio.error.S3Error(
         code=exception_code, message='any msg', resource='any', request_id='any', host_id='any', response='error'
     )
-    mock_minio().fget_object.side_effect = [minio_exception]
 
     download_client = await create_file_download_client(
         files=[{'id': 'geid_1'}],
