@@ -19,10 +19,12 @@ from typing import Union
 from common import LoggerFactory
 from common import ProjectClient
 from common import ProjectNotFoundException
+from common import get_boto3_client
 from fastapi import APIRouter
 from fastapi import BackgroundTasks
 from fastapi import Header
 from fastapi.responses import JSONResponse
+from fastapi.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
 from fastapi_utils import cbv
 from sqlalchemy import MetaData
@@ -34,7 +36,6 @@ from app.commons.download_manager.dataset_download_manager import (
 from app.commons.download_manager.file_download_manager import (
     create_file_download_client,
 )
-from app.commons.service_connection.minio_client import get_minio_client
 from app.config import ConfigClass
 from app.models.base_models import APIResponse
 from app.models.base_models import EAPIResponseCode
@@ -250,7 +251,7 @@ class APIDataDownload:
             - hash_code(string): the HS256 generate by dataset service
 
         Return:
-            - dict: the hash code
+            - url: the presigned url to download the file
         '''
 
         api_response = APIResponse()
@@ -262,16 +263,23 @@ class APIDataDownload:
 
         minio_path = result['location'].split('//')[-1]
         _, bucket, file_path = tuple(minio_path.split('/', 2))
-        filename = file_path.split('/')[-1]
+        # filename = file_path.split('/')[-1]
 
         try:
-            mc = await get_minio_client(authorization, refresh_token)
-            result = await mc.stat_object(bucket, file_path)
-            headers = {'Content-Length': str(result.size), 'Content-Disposition': f'attachment; filename={filename}'}
-            response = await mc.get_object(bucket, file_path)
+            boto3_client = await get_boto3_client(
+                ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
+            )
+
+            presigned_url = boto3_client.get_download_presigned_url(bucket, file_path)
+
+            # mc = await get_minio_client(authorization, refresh_token)
+            # result = await mc.stat_object(bucket, file_path)
+            # headers = {'Content-Length': str(result.size), 'Content-Disposition': f'attachment; filename={filename}'}
+            # response = await mc.get_object(bucket, file_path)
         except Exception as e:
             error_msg = f'Error getting file from minio: {str(e)}'
             self.__logger.error(error_msg)
             api_response.error_msg = error_msg
             return api_response.json_response()
-        return StreamingResponse(response.stream(), headers=headers)
+
+        return RedirectResponse(presigned_url)

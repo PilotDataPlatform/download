@@ -18,6 +18,7 @@ import os
 from common import LoggerFactory
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
 from fastapi_utils import cbv
 from jwt import ExpiredSignatureError
 from jwt.exceptions import DecodeError
@@ -141,18 +142,24 @@ class APIDataDownload:
             response.error_msg = str(e)
             return response.json_response()
 
-        # get the temporary file path we saved in token
-        # and use it to fetch the actual file
+        # using the file path in the token to fetch file by
+        # 1. if number of file > 1, the files are zipped locally. and response
+        #    will 307 redirection.
+        # 2. if number = 1, the path presigned url from object storage. and
+        #    the response will be 200 with file stream
         file_path = res_verify_token.get('file_path')
-        if not os.path.exists(file_path):
-            self.__logger.error(f'File not found {file_path} in namespace {ConfigClass.namespace}')
-            response.code = EAPIResponseCode.not_found
-            response.error_msg = customized_error_template(ECustomizedError.FILE_NOT_FOUND) % file_path
-            return response.json_response()
+        response = None
+        if file_path.startswith('http'):
+            response = RedirectResponse(file_path)
+        else:
+            if not os.path.exists(file_path):
+                self.__logger.error(f'File not found {file_path} in namespace {ConfigClass.namespace}')
+                response.code = EAPIResponseCode.not_found
+                response.error_msg = customized_error_template(ECustomizedError.FILE_NOT_FOUND) % file_path
+                return response.json_response()
 
-        # this operation is needed since the file will be
-        # download to nfs from minio then transfer to user
-        filename = os.path.basename(file_path)
+            filename = os.path.basename(file_path)
+            response = FileResponse(path=file_path, filename=filename)
 
         # Add download file log for project
         # will be removed after kafka consumer setup
@@ -177,4 +184,4 @@ class APIDataDownload:
 
         self.__logger.debug(status_update_res)
 
-        return FileResponse(path=file_path, filename=filename)
+        return response
