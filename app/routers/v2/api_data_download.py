@@ -263,19 +263,13 @@ class APIDataDownload:
 
         minio_path = result['location'].split('//')[-1]
         _, bucket, file_path = tuple(minio_path.split('/', 2))
-        # filename = file_path.split('/')[-1]
 
         try:
             boto3_client = await get_boto3_client(
                 ConfigClass.MINIO_ENDPOINT, token=authorization, https=ConfigClass.MINIO_HTTPS
             )
-
             presigned_url = await boto3_client.get_download_presigned_url(bucket, file_path)
 
-            # mc = await get_minio_client(authorization, refresh_token)
-            # result = await mc.stat_object(bucket, file_path)
-            # headers = {'Content-Length': str(result.size), 'Content-Disposition': f'attachment; filename={filename}'}
-            # response = await mc.get_object(bucket, file_path)
         except Exception as e:
             error_msg = f'Error getting file: {str(e)}'
             self.__logger.error(error_msg)

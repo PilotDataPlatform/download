@@ -281,12 +281,6 @@ class FileDownloadClient:
                 lock_keys.append('%s/%s/%s' % (bucket, nodes.get('parent_path'), nodes.get('name')))
             await bulk_lock_operation(lock_keys, 'read')
 
-            # # download all file to tmp folder
-            # mc = await get_minio_client(self.auth_token['at'], self.auth_token['rt'])
-            # for obj in self.files_to_zip:
-            #     await mc.fget_object(obj, self.tmp_folder)
-            #     self.logger.info(f'File downloaded: {str(obj)}')
-
             boto3_client = await get_boto3_client(
                 ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
             )
