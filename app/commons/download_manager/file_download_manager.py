@@ -121,23 +121,23 @@ class FileDownloadClient:
 
         self.logger = LoggerFactory('api_data_download').get_logger()
 
-    async def _parse_minio_location(self, location: str) -> Tuple[str, str]:
+    async def _parse_object_location(self, location: str) -> Tuple[str, str]:
         '''
         Summary:
-            The function will parse out the minio location and return
+            The function will parse out the object location and return
             the bucket & object path
 
         Parameter:
             - location(str): the object location from metadata. The format
             of location will be:
-                <http or https>://<minio_endpoint>/<bucket>/<object_path>
+                <http or https>://<storage_endpoint>/<bucket>/<object_path>
 
         Return:
-            - bucket: the bucket in the minio
+            - bucket: the bucket in the storage
             - object_path: the path for the object
         '''
-        minio_path = location.split('//')[-1]
-        _, bucket, obj_path = tuple(minio_path.split('/', 2))
+        object_path = location.split('//')[-1]
+        _, bucket, obj_path = tuple(object_path.split('/', 2))
 
         return bucket, obj_path
 
@@ -238,7 +238,7 @@ class FileDownloadClient:
             boto3_client = await get_boto3_client(
                 ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
             )
-            bucket, file_path = await self._parse_minio_location(self.files_to_zip[0].get('location'))
+            bucket, file_path = await self._parse_object_location(self.files_to_zip[0].get('location'))
             self.result_file_name = await boto3_client.get_download_presigned_url(bucket, file_path)
         else:
             self.result_file_name = self.tmp_folder + '.zip'
@@ -287,7 +287,7 @@ class FileDownloadClient:
 
             os.mkdir(self.tmp_folder)
             for obj in self.files_to_zip:
-                bucket, obj_path = await self._parse_minio_location(obj.get('location'))
+                bucket, obj_path = await self._parse_object_location(obj.get('location'))
                 temp_path = os.path.join(self.tmp_folder, obj.get('parent_path'))
                 if not os.path.exists(temp_path):
                     os.mkdir(temp_path)
