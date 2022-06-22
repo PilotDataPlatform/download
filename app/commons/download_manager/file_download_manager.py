@@ -234,6 +234,8 @@ class FileDownloadClient:
         '''
 
         if len(self.files_to_zip) == 1:
+            # Note here if minio can be public assessible then the endpoint
+            # must be domain name
             boto3_client = await get_boto3_client(
                 ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
             )

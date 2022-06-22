@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
     KEYCLOAK_MINIO_SECRET: str
+    DOMAIN_NAME: str
 
     # download secret
     DOWNLOAD_KEY: str = 'indoc101'
@@ -109,6 +110,8 @@ class Settings(BaseSettings):
 
         # minio
         self.MINIO_TMP_PATH = self.ROOT_PATH + '/tmp/'
+        self.MINIO_PUBLIC_URL = self.DOMAIN_NAME
+
         # postgres
         self.RDS_DB_URI = self.RDS_DB_URI.replace('postgresql', 'postgresql+asyncpg')
         # redis

@@ -266,7 +266,7 @@ class APIDataDownload:
 
         try:
             boto3_client = await get_boto3_client(
-                ConfigClass.MINIO_ENDPOINT, token=authorization, https=ConfigClass.MINIO_HTTPS
+                ConfigClass.DOMAIN_NAME, token=authorization, https=ConfigClass.MINIO_HTTPS
             )
             presigned_url = await boto3_client.get_download_presigned_url(bucket, file_path)
 
