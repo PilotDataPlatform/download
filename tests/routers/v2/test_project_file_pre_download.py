@@ -97,7 +97,7 @@ async def test_v2_download_pre_return_200_when_approval_request_id(
     client,
     httpx_mock,
     metadata,
-    mock_minio,
+    mock_boto3,
     mocker,
 ):
 
@@ -151,7 +151,7 @@ async def test_v2_download_pre_return_200_when_label_is_not_Folder(
     client,
     httpx_mock,
     metadata,
-    mock_minio,
+    mock_boto3,
     mocker,
 ):
 
@@ -205,7 +205,7 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(
     client,
     httpx_mock,
     metadata,
-    mock_minio,
+    mock_boto3,
     mocker,
 ):
 
@@ -228,6 +228,7 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(
         },
     )
 
+    container_code = 'fake_project_code'
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=fake_project_code'
@@ -236,12 +237,12 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(
         json={
             'result': [
                 {
-                    'storage': {'location_uri': 'http://anything.com/bucket/obj/path'},
+                    'storage': {'location_uri': f'http://anything.com/{container_code}/obj/path'},
                     'id': 'fake_geid',
                     'type': 'file',
                     'owner': 'me',
                     'parent_path': 'admin',
-                    'container_code': 'fake_project_code',
+                    'container_code': container_code,
                     'zone': 0,
                 }
             ]
@@ -259,7 +260,7 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(
             'session_id': '123',
             'operator': 'me',
             'project_id': 'any',
-            'container_code': 'fake_project_code',
+            'container_code': container_code,
             'container_type': 'project',
             'files': [{'id': 'fake_geid'}],
         },
@@ -271,6 +272,6 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(
     assert result['project_code'] in result['source']
     assert result['action'] == 'data_download'
     assert result['status'] == 'ZIPPING'
-    assert result['project_code'] == 'fake_project_code'
+    assert result['project_code'] == container_code
     assert result['operator'] == 'me'
     assert result['payload']['hash_code']

@@ -234,8 +234,8 @@ async def client(app):
 
 
 @pytest.fixture
-def mock_minio(monkeypatch):
-    from app.commons.service_connection.minio_client import Minio
+def mock_boto3(monkeypatch):
+    from common.object_storage_adaptor.boto3_client import Boto3Client
 
     class FakeObject:
         size = b'a'
@@ -245,10 +245,20 @@ def mock_minio(monkeypatch):
     response.raw = http_response
     response.raw._fp = BytesIO(b'File like object')
 
-    monkeypatch.setattr(Minio, 'stat_object', lambda x, y, z: FakeObject())
-    monkeypatch.setattr(Minio, 'get_object', lambda x, y, z: http_response)
-    monkeypatch.setattr(Minio, 'list_buckets', lambda x: [])
-    monkeypatch.setattr(Minio, 'fget_object', lambda *x: [])
+    async def fake_init_connection():
+        pass
+
+    async def fake_downlaod_object(x, y, z, z1):
+        return response
+
+    async def fake_get_download_presigned_url(x, y, z):
+        return f'http://minio.minio:9000/{y}/{z}'
+
+    monkeypatch.setattr(Boto3Client, 'init_connection', lambda x: fake_init_connection())
+    monkeypatch.setattr(Boto3Client, 'downlaod_object', lambda x, y, z, z1: fake_downlaod_object(x, y, z, z1))
+    monkeypatch.setattr(
+        Boto3Client, 'get_download_presigned_url', lambda x, y, z: fake_get_download_presigned_url(x, y, z)
+    )
 
 
 @pytest.fixture

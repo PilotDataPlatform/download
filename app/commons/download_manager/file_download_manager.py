@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import shutil
 import time
 from typing import Any
@@ -20,14 +21,14 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import Tuple
 
 import httpx
 from common import LoggerFactory
+from common import get_boto3_client
 from starlette.concurrency import run_in_threadpool
 
 from app.commons.locks import bulk_lock_operation
-from app.commons.service_connection.minio_client import Minio_Client
-from app.commons.service_connection.minio_client import get_minio_client
 from app.config import ConfigClass
 from app.models.base_models import EAPIResponseCode
 from app.models.models_data_download import EDataDownloadStatus
@@ -119,6 +120,26 @@ class FileDownloadClient:
         self.folder_download = False
 
         self.logger = LoggerFactory('api_data_download').get_logger()
+
+    async def _parse_object_location(self, location: str) -> Tuple[str, str]:
+        '''
+        Summary:
+            The function will parse out the object location and return
+            the bucket & object path
+
+        Parameter:
+            - location(str): the object location from metadata. The format
+            of location will be:
+                <http or https>://<storage_endpoint>/<bucket>/<object_path>
+
+        Return:
+            - bucket: the bucket in the storage
+            - object_path: the path for the object
+        '''
+        object_path = location.split('//')[-1]
+        _, bucket, obj_path = tuple(object_path.split('/', 2))
+
+        return bucket, obj_path
 
     async def set_status(self, status: EDataDownloadStatus, payload: dict):
         '''
@@ -214,8 +235,11 @@ class FileDownloadClient:
         '''
 
         if len(self.files_to_zip) == 1:
-            location = self.files_to_zip[0]['location']
-            self.result_file_name = self.tmp_folder + '/' + Minio_Client.parse_minio_location(location)[1]
+            boto3_client = await get_boto3_client(
+                ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
+            )
+            bucket, file_path = await self._parse_object_location(self.files_to_zip[0].get('location'))
+            self.result_file_name = await boto3_client.get_download_presigned_url(bucket, file_path)
         else:
             self.result_file_name = self.tmp_folder + '.zip'
 
@@ -257,11 +281,17 @@ class FileDownloadClient:
                 lock_keys.append('%s/%s/%s' % (bucket, nodes.get('parent_path'), nodes.get('name')))
             await bulk_lock_operation(lock_keys, 'read')
 
-            # download all file to tmp folder
-            mc = await get_minio_client(self.auth_token['at'], self.auth_token['rt'])
+            boto3_client = await get_boto3_client(
+                ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
+            )
+
+            os.mkdir(self.tmp_folder)
             for obj in self.files_to_zip:
-                await mc.fget_object(obj, self.tmp_folder)
-                self.logger.info(f'File downloaded: {str(obj)}')
+                bucket, obj_path = await self._parse_object_location(obj.get('location'))
+                temp_path = os.path.join(self.tmp_folder, obj.get('parent_path'))
+                if not os.path.exists(temp_path):
+                    os.mkdir(temp_path)
+                await boto3_client.downlaod_object(bucket, obj_path, self.tmp_folder + '/' + obj_path)
 
         except Exception as e:
             self.logger.error('Error in background job: ' + (str(e)))

@@ -22,7 +22,7 @@ from app.commons.download_manager.dataset_download_manager import (
 pytestmark = pytest.mark.asyncio
 
 
-async def test_download_client_without_files(httpx_mock, mock_minio):
+async def test_download_client_without_files(httpx_mock, mock_boto3):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=any_code'

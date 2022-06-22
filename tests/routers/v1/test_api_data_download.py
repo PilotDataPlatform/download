@@ -152,6 +152,7 @@ async def test_v1_download_should_return_404_when_path_not_found(client, file_fo
     resp = await client.get(
         f'/v1/download/{file_folder_jwt_token}',
     )
+
     assert resp.status_code == 404
     assert resp.json() == {
         'code': 404,
