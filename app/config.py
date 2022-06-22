@@ -110,7 +110,8 @@ class Settings(BaseSettings):
 
         # minio
         self.MINIO_TMP_PATH = self.ROOT_PATH + '/tmp/'
-        self.MINIO_PUBLIC_URL = self.DOMAIN_NAME
+        http_prefix = 'https://' if self.MINIO_HTTPS else 'http://'
+        self.MINIO_PUBLIC_URL = self.DOMAIN_NAME.replace(http_prefix, '')
 
         # postgres
         self.RDS_DB_URI = self.RDS_DB_URI.replace('postgresql', 'postgresql+asyncpg')
