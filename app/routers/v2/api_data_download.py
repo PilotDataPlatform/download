@@ -25,7 +25,6 @@ from fastapi import BackgroundTasks
 from fastapi import Header
 from fastapi import Response
 from fastapi.responses import JSONResponse
-from fastapi.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
 from fastapi_utils import cbv
 from sqlalchemy import MetaData
@@ -278,5 +277,5 @@ class APIDataDownload:
             api_response.code = EAPIResponseCode.bad_request
             return api_response.json_response()
 
-        response.headers['Authorization'] = authorization
-        return RedirectResponse(presigned_url)
+        # response.headers['Authorization'] = authorization
+        return presigned_url

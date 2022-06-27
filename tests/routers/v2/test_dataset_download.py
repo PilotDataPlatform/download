@@ -33,7 +33,7 @@ async def test_v2_dataset_download_should_return_200_when_success(client, datase
         f'/v2/dataset/download/{dataset_download_jwt_token}', headers={'Authorization': 'test'}, allow_redirects=False
     )
 
-    assert resp.status_code == 307
+    assert resp.status_code == 200
 
 
 async def test_v2_dataset_download_should_return_200_when_minio_raise_error(
