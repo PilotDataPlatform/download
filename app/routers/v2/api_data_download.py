@@ -23,6 +23,7 @@ from common import get_boto3_client
 from fastapi import APIRouter
 from fastapi import BackgroundTasks
 from fastapi import Header
+from fastapi import Response
 from fastapi.responses import JSONResponse
 from fastapi.responses import RedirectResponse
 from fastapi.responses import StreamingResponse
@@ -235,8 +236,8 @@ class APIDataDownload:
     async def download_dataset_version(
         self,
         hash_code: str,
+        response: Response,
         authorization: Optional[str] = Header(None),
-        refresh_token: Optional[str] = Header(None),
     ) -> Union[StreamingResponse, JSONResponse]:
 
         '''
@@ -277,5 +278,5 @@ class APIDataDownload:
             api_response.code = EAPIResponseCode.bad_request
             return api_response.json_response()
 
-        headers = {'Authorization': authorization}
-        return RedirectResponse(presigned_url, headers=headers)
+        response.headers['Authorization'] = authorization
+        return RedirectResponse(presigned_url)
