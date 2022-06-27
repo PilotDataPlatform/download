@@ -277,4 +277,5 @@ class APIDataDownload:
             api_response.code = EAPIResponseCode.bad_request
             return api_response.json_response()
 
-        return RedirectResponse(presigned_url)
+        headers = {'Authorization': authorization}
+        return RedirectResponse(presigned_url, headers=headers)
