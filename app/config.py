@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     RDS_DB_URI: str
     RDS_SCHEMA_DEFAULT: str
 
+    # kafka
+    KAFKA_URL: str
+
     OPEN_TELEMETRY_ENABLED: bool = False
     OPEN_TELEMETRY_HOST: str = '127.0.0.1'
     OPEN_TELEMETRY_PORT: int = 6831

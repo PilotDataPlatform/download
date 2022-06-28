@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from datetime import datetime
 
 from common import LoggerFactory
 from fastapi import APIRouter
@@ -23,6 +24,7 @@ from fastapi_utils import cbv
 from jwt import ExpiredSignatureError
 from jwt.exceptions import DecodeError
 
+from app.commons.kafka_producer import get_kafka_producer
 from app.config import ConfigClass
 from app.models.base_models import APIResponse
 from app.models.base_models import EAPIResponseCode
@@ -35,7 +37,8 @@ from app.resources.error_handler import catch_internal
 from app.resources.error_handler import customized_error_template
 from app.resources.helpers import get_status
 from app.resources.helpers import set_status
-from app.resources.helpers import update_file_operation_logs
+
+# from app.resources.helpers import update_file_operation_logs
 
 router = APIRouter()
 
@@ -162,11 +165,33 @@ class APIDataDownload:
 
         # Add download file log for project
         # will be removed after kafka consumer setup
-        await update_file_operation_logs(
-            res_verify_token.get('operator'),
-            file_path,
-            res_verify_token.get('container_code'),
-        )
+        # await update_file_operation_logs(
+        #     res_verify_token.get('operator'),
+        #     file_path,
+        #     res_verify_token.get('container_code'),
+        # )
+
+        items = {
+            'activity_type': 'upload',
+            'activity_time': datetime.now(),
+            'id': res_verify_token.get('id', ''),
+            'item_type': res_verify_token.get('item_type', ''),
+            'item_name': res_verify_token.get('item_name', ''),
+            'item_parent_path': res_verify_token.get('item_parent_path', ''),
+            'container_code': res_verify_token.get('container_code'),
+            'container_type': 'project',
+            'zone': res_verify_token.get('zone', 0),
+            'user': res_verify_token.get('operator'),
+            'imported_from': '',
+            'changes': [],
+        }
+
+        kp = await get_kafka_producer(ConfigClass.KAFKA_URL, 'test_topic_1')
+        await kp.create_activity_log(items, 'metadata_items_activity.avsc', 'admin')
+        # print('========================')
+        # print('========================')
+        # print('========================')
+        # print(res_verify_token)
 
         # here we assume to overwrite the job with hashcode payload
         # no matter what (if the old doesnot exist or something else happens)
