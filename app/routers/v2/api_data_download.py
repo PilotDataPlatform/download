@@ -277,5 +277,4 @@ class APIDataDownload:
             api_response.code = EAPIResponseCode.bad_request
             return api_response.json_response()
 
-        # response.headers['Authorization'] = authorization
-        return presigned_url
+        return {'url': presigned_url}
