@@ -48,6 +48,7 @@ environ['UTILITY_SERVICE'] = 'http://UTILITY_SERVICE'
 environ['DATA_OPS_UTIL'] = 'http://DATA_OPS_UTIL'
 environ['PROJECT_SERVICE'] = 'http://PROJECT_SERVICE'
 environ['DOMAIN_NAME'] = 'http://DOMAIN_NAME'
+environ['KAFKA_URL'] = 'http://KAFKA_URL'
 
 environ['CORE_ZONE_LABEL'] = 'Core'
 environ['GREEN_ZONE_LABEL'] = 'Greenroom'
@@ -260,6 +261,28 @@ def mock_boto3(monkeypatch):
     monkeypatch.setattr(
         Boto3Client, 'get_download_presigned_url', lambda x, y, z: fake_get_download_presigned_url(x, y, z)
     )
+
+
+@pytest.fixture
+def mock_kafka_producer(monkeypatch):
+    from app.commons.kafka_producer import KakfaProducer
+
+    async def fake_init_connection():
+        pass
+
+    async def fake_send_message(x, y):
+        pass
+
+    async def fake_validate_message(x, y, z):
+        pass
+
+    async def fake_create_activity_log(x, y, z, z1):
+        pass
+
+    monkeypatch.setattr(KakfaProducer, 'init_connection', lambda x: fake_init_connection())
+    monkeypatch.setattr(KakfaProducer, '_send_message', lambda x, y: fake_send_message(x, y))
+    monkeypatch.setattr(KakfaProducer, '_validate_message', lambda x, y, z: fake_validate_message(x, y, z))
+    monkeypatch.setattr(KakfaProducer, 'create_activity_log', lambda x, y, z, z1: fake_create_activity_log(x, y, z, z1))
 
 
 @pytest.fixture

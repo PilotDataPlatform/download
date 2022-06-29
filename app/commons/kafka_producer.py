@@ -65,9 +65,9 @@ class KakfaProducer:
             'activity_type': 'upload',
             'activity_time': datetime.now(),
             'item_id': source_node.get('id'),
-            'item_type': source_node.get('item_type'),
-            'item_name': source_node.get('item_name'),
-            'item_parent_path': source_node.get('item_parent_path'),
+            'item_type': source_node.get('type'),
+            'item_name': source_node.get('name'),
+            'item_parent_path': source_node.get('parent_path'),
             'container_code': source_node.get('container_code'),
             'container_type': source_node.get('container_type'),
             'zone': source_node.get('zone'),
@@ -77,33 +77,6 @@ class KakfaProducer:
         }
 
         byte_message = await self._validate_message(schema_name, message)
-        # print(byte_message)
-
         await self._send_message(byte_message)
 
         return
-
-
-# items = {
-#     'activity_type': 'upload',
-#     'activity_time': '2022-04-13 13:30:10.890347',
-#     'id': '2955ed78-d9e5-4a06-898e-a26db470d132',
-#     'item_type': 'file',
-#     'item_name': 'file_name.txt',
-#     'item_parent_path': 'erik.folder_name',
-#     'container_code': 'erik_container',
-#     'container_type': 'project',
-#     'zone': 0,
-#     'user': 'erik',
-#     'imported_from': "",
-#     'changes': [],
-# }
-
-# async def main():
-#     kp = await get_kafka_producer('10.3.7.113:9092', 'test_topic_1')
-
-#     await kp.create_activity_log(items, 'metadata_items_activity.avsc', 'admin')
-
-
-# loop = asyncio.get_event_loop()
-# loop.run_until_complete(main())

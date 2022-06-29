@@ -244,6 +244,9 @@ class FileDownloadClient:
         else:
             self.result_file_name = self.tmp_folder + '.zip'
 
+        # since the file or files are from some zone/project
+        # use the first file to gather the info for the list
+        first_node = self.files_to_zip[0]
         return await generate_token(
             self.container_code,
             self.container_type,
@@ -251,6 +254,13 @@ class FileDownloadClient:
             self.operator,
             self.session_id,
             self.job_id,
+            payload={
+                'zone': first_node.get('zone'),
+                'parent_path': first_node.get('parent_path'),
+                'type': 'file',
+                'id': first_node.get('id'),
+                'name': first_node.get('name'),
+            },
         )
 
     async def _file_download_worker(self, hash_code: str) -> None:

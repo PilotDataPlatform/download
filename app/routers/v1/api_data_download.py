@@ -171,31 +171,23 @@ class APIDataDownload:
         #     res_verify_token.get('container_code'),
         # )
 
-        items = {
+        # there is some other infomation
+        extra_info = res_verify_token.get('payload')
+        logs_info = {
             'activity_type': 'upload',
             'activity_time': datetime.now(),
-            'id': res_verify_token.get('id', ''),
-            'item_type': res_verify_token.get('item_type', ''),
-            'item_name': res_verify_token.get('item_name', ''),
-            'item_parent_path': res_verify_token.get('item_parent_path', ''),
             'container_code': res_verify_token.get('container_code'),
             'container_type': 'project',
-            'zone': res_verify_token.get('zone', 0),
             'user': res_verify_token.get('operator'),
-            'imported_from': '',
-            'changes': [],
+            **extra_info,
         }
 
         kp = await get_kafka_producer(ConfigClass.KAFKA_URL, 'test_topic_1')
-        await kp.create_activity_log(items, 'metadata_items_activity.avsc', 'admin')
-        # print('========================')
-        # print('========================')
-        # print('========================')
-        # print(res_verify_token)
+        await kp.create_activity_log(logs_info, 'metadata_items_activity.avsc', 'admin')
 
         # here we assume to overwrite the job with hashcode payload
         # no matter what (if the old doesnot exist or something else happens)
-        status_update_res = await set_status(
+        _ = await set_status(
             res_verify_token.get('session_id'),
             res_verify_token.get('job_id'),
             file_path,
@@ -206,6 +198,6 @@ class APIDataDownload:
             res_verify_token.get('payload', {}),
         )
 
-        self.__logger.debug(status_update_res)
+        self.__logger.debug('Set the job status')
 
         return response

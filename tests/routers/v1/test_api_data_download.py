@@ -168,6 +168,7 @@ async def test_v1_download_should_return_200_when_success(
     client,
     fake_job,
     httpx_mock,
+    mock_kafka_producer,
 ):
     hash_token_dict = {
         'file_path': 'tests/routers/v1/empty.txt',
@@ -184,7 +185,6 @@ async def test_v1_download_should_return_200_when_success(
 
     hash_code = jwt.encode(hash_token_dict, key=ConfigClass.DOWNLOAD_KEY, algorithm='HS256').decode('utf-8')
 
-    httpx_mock.add_response(method='POST', url='http://provenance_service/v1/audit-logs', json={}, status_code=200)
     resp = await client.get(
         f'/v1/download/{hash_code}',
     )
