@@ -47,7 +47,7 @@ environ['DATASET_SERVICE'] = 'http://DATASET_SERVICE'
 environ['UTILITY_SERVICE'] = 'http://UTILITY_SERVICE'
 environ['DATA_OPS_UTIL'] = 'http://DATA_OPS_UTIL'
 environ['PROJECT_SERVICE'] = 'http://PROJECT_SERVICE'
-environ['DOMAIN_NAME'] = 'http://DOMAIN_NAME'
+environ['MINIO_PUBLIC_URL'] = 'MINIO_PUBLIC_URL'
 
 environ['CORE_ZONE_LABEL'] = 'Core'
 environ['GREEN_ZONE_LABEL'] = 'Greenroom'
