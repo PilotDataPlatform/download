@@ -118,7 +118,7 @@ class FileDownloadClient:
         # stream back the zip file
         self.folder_download = False
 
-        self.logger = LoggerFactory('api_data_download').get_logger()
+        self.logger = LoggerFactory('file_download_manager').get_logger()
 
     async def _parse_object_location(self, location: str) -> Tuple[str, str]:
         '''

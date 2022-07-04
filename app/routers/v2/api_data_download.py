@@ -59,7 +59,7 @@ class APIDataDownload:
     """API Data Download Class."""
 
     def __init__(self):
-        self.__logger = LoggerFactory('api_data_download').get_logger()
+        self.__logger = LoggerFactory('api_data_download_v2').get_logger()
         self.project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
 
     @router.post(
@@ -105,6 +105,7 @@ class APIDataDownload:
             - 200
         '''
 
+        self.__logger.info('Recieving request on /download/pre/')
         response = APIResponse()
         minio_token = {
             'at': authorization,
@@ -112,6 +113,7 @@ class APIDataDownload:
         }
 
         # todo somehow check the container exist after migration
+        self.__logger.info(f'Check container: {data.container_type} {data.container_code}.')
         try:
             if data.container_type == 'project':
                 _ = await self.project_client.get(code=data.container_code)
@@ -125,6 +127,8 @@ class APIDataDownload:
         # approval files. Fetch files from Postgres by approval id
         file_geids_to_include = None
         if data.approval_request_id:
+            self.__logger.info(f'download from approval request: {data.approval_request_id}')
+
             engine = create_async_engine(ConfigClass.RDS_DB_URI)
             metadata = MetaData(schema=ConfigClass.RDS_SCHEMA_DEFAULT)
             async with engine.connect() as conn:
@@ -137,7 +141,10 @@ class APIDataDownload:
             )
             file_geids_to_include = set(request_approval_entities.keys())
 
+            self.__logger.info(f'File included in approval request: {file_geids_to_include}')
+
         try:
+            self.__logger.info('Initialize the data download client')
             download_client = await create_file_download_client(
                 data.files,
                 minio_token,
@@ -203,9 +210,8 @@ class APIDataDownload:
             - 200
         '''
 
+        self.__logger.info('Recieving request on /dataset/download/pre')
         api_response = APIResponse()
-        self.__logger.info('Called dataset download')
-
         minio_token = {
             'at': authorization,
             'rt': refresh_token,
@@ -213,6 +219,7 @@ class APIDataDownload:
 
         # TODO somehow check the dataset exist after migration
 
+        self.__logger.info('Initialize the dataset download client')
         download_client = await create_dataset_download_client(
             minio_token,
             data.operator,
@@ -254,6 +261,7 @@ class APIDataDownload:
             - url: the presigned url to download the file
         '''
 
+        self.__logger.info('Recieving request on /dataset/download/{hash_code}')
         api_response = APIResponse()
         valid, result = verify_dataset_version_token(hash_code)
         if not valid:
@@ -265,6 +273,7 @@ class APIDataDownload:
         _, bucket, file_path = tuple(minio_path.split('/', 2))
 
         try:
+            self.__logger.info('Generate presigned url')
             boto3_client = await get_boto3_client(
                 ConfigClass.MINIO_PUBLIC_URL, token=authorization, https=ConfigClass.MINIO_PUBLIC_HTTPS
             )

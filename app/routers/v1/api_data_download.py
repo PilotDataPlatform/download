@@ -48,7 +48,7 @@ class APIDataDownload:
     """API Data Download Class."""
 
     def __init__(self):
-        self.__logger = LoggerFactory('api_data_download').get_logger()
+        self.__logger = LoggerFactory('api_data_download_v1').get_logger()
 
     @router.get(
         '/download/status/{hash_code}',
@@ -70,6 +70,8 @@ class APIDataDownload:
         '''
 
         response = APIResponse()
+
+        self.__logger.info('Recieving request on /download/status/{hash_code}')
         # verify hash code
         try:
             res_verify_token = await verify_download_token(hash_code)
@@ -123,8 +125,8 @@ class APIDataDownload:
             - file response
         '''
 
+        self.__logger.info('Recieving request on /download/{hash_code}')
         response = APIResponse()
-        self.__logger.info(f'Check downloading request: {hash_code}')
 
         # Verify and decode token
         try:
@@ -162,6 +164,7 @@ class APIDataDownload:
 
         # Add download file log for project
         # will be removed after kafka consumer setup
+        self.__logger.info('update activity logs')
         await update_file_operation_logs(
             res_verify_token.get('operator'),
             file_path,
