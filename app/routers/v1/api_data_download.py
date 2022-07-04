@@ -183,7 +183,7 @@ class APIDataDownload:
         }
 
         kp = await get_kafka_producer(ConfigClass.KAFKA_URL, 'test_topic_1')
-        await kp.create_activity_log(logs_info, 'metadata_items_activity.avsc', 'admin')
+        await kp.create_activity_log(logs_info, 'metadata_items_activity.avsc', res_verify_token.get('operator'))
 
         # here we assume to overwrite the job with hashcode payload
         # no matter what (if the old doesnot exist or something else happens)
