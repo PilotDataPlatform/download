@@ -13,19 +13,16 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Optional
-from typing import Union
+from typing import Optional, Union
 
-from common import LoggerFactory
-from common import ProjectClient
-from common import ProjectNotFoundException
-from common import get_boto3_client
-from fastapi import APIRouter
-from fastapi import BackgroundTasks
-from fastapi import Header
-from fastapi import Response
-from fastapi.responses import JSONResponse
-from fastapi.responses import StreamingResponse
+from common import (
+    LoggerFactory,
+    ProjectClient,
+    ProjectNotFoundException,
+    get_boto3_client,
+)
+from fastapi import APIRouter, BackgroundTasks, Header
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi_utils import cbv
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -37,12 +34,13 @@ from app.commons.download_manager.file_download_manager import (
     create_file_download_client,
 )
 from app.config import ConfigClass
-from app.models.base_models import APIResponse
-from app.models.base_models import EAPIResponseCode
-from app.models.models_data_download import DatasetPrePOST
-from app.models.models_data_download import EDataDownloadStatus
-from app.models.models_data_download import PreDataDownloadPOST
-from app.models.models_data_download import PreDataDownloadResponse
+from app.models.base_models import APIResponse, EAPIResponseCode
+from app.models.models_data_download import (
+    DatasetPrePOST,
+    EDataDownloadStatus,
+    PreDataDownloadPOST,
+    PreDataDownloadResponse,
+)
 from app.resources.download_token_manager import verify_dataset_version_token
 from app.resources.error_handler import catch_internal
 from app.resources.helpers import ResourceNotFound
@@ -242,7 +240,6 @@ class APIDataDownload:
     async def download_dataset_version(
         self,
         hash_code: str,
-        response: Response,
         authorization: Optional[str] = Header(None),
     ) -> Union[StreamingResponse, JSONResponse]:
 

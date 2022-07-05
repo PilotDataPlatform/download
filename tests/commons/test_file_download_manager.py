@@ -18,8 +18,8 @@ from unittest import mock
 import minio
 import pytest
 
-from app.commons.download_manager.file_download_manager import FileDownloadClient
 from app.commons.download_manager.file_download_manager import (
+    FileDownloadClient,
     create_file_download_client,
 )
 from app.models.models_data_download import EDataDownloadStatus

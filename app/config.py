@@ -13,12 +13,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 from common import VaultClient
-from pydantic import BaseSettings
-from pydantic import Extra
+from pydantic import BaseSettings, Extra
 from starlette.config import Config
 
 config = Config('.env')
@@ -87,6 +85,10 @@ class Settings(BaseSettings):
     # Postgres
     RDS_DB_URI: str
     RDS_SCHEMA_DEFAULT: str
+
+    # kafka
+    KAFKA_URL: str
+    KAFKA_ACTIVITY_TOPIC: str = 'metadata.items.activity'
 
     OPEN_TELEMETRY_ENABLED: bool = False
     OPEN_TELEMETRY_HOST: str = '127.0.0.1'

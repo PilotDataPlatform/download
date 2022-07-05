@@ -15,10 +15,12 @@
 
 import random
 
-from app.services.approval.models import ApprovalEntity
-from app.services.approval.models import CopyStatus
-from app.services.approval.models import EntityType
-from app.services.approval.models import ReviewStatus
+from app.services.approval.models import (
+    ApprovalEntity,
+    CopyStatus,
+    EntityType,
+    ReviewStatus,
+)
 
 
 class TestApprovalEntity:

@@ -14,28 +14,31 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from datetime import datetime
 
 from common import LoggerFactory
 from fastapi import APIRouter
-from fastapi.responses import FileResponse
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi_utils import cbv
 from jwt import ExpiredSignatureError
 from jwt.exceptions import DecodeError
 
+from app.commons.kafka_producer import get_kafka_producer
 from app.config import ConfigClass
-from app.models.base_models import APIResponse
-from app.models.base_models import EAPIResponseCode
-from app.models.models_data_download import EDataDownloadStatus
-from app.models.models_data_download import GetDataDownloadStatusResponse
-from app.resources.download_token_manager import InvalidToken
-from app.resources.download_token_manager import verify_download_token
-from app.resources.error_handler import ECustomizedError
-from app.resources.error_handler import catch_internal
-from app.resources.error_handler import customized_error_template
-from app.resources.helpers import get_status
-from app.resources.helpers import set_status
-from app.resources.helpers import update_file_operation_logs
+from app.models.base_models import APIResponse, EAPIResponseCode
+from app.models.models_data_download import (
+    EDataDownloadStatus,
+    GetDataDownloadStatusResponse,
+)
+from app.resources.download_token_manager import InvalidToken, verify_download_token
+from app.resources.error_handler import (
+    ECustomizedError,
+    catch_internal,
+    customized_error_template,
+)
+from app.resources.helpers import get_status, set_status
+
+# from app.resources.helpers import update_file_operation_logs
 
 router = APIRouter()
 
@@ -164,16 +167,34 @@ class APIDataDownload:
 
         # Add download file log for project
         # will be removed after kafka consumer setup
-        self.__logger.info('update activity logs')
-        await update_file_operation_logs(
+        # await update_file_operation_logs(
+        #     res_verify_token.get('operator'),
+        #     file_path,
+        #     res_verify_token.get('container_code'),
+        # )
+
+        # there is some other infomation
+        extra_info = res_verify_token.get('payload')
+        logs_info = {
+            'activity_type': 'download',
+            'activity_time': datetime.utcnow(),
+            'container_code': res_verify_token.get('container_code'),
+            'container_type': 'project',
+            'user': res_verify_token.get('operator'),
+            **extra_info,
+        }
+
+        kp = await get_kafka_producer()
+        await kp.create_activity_log(
+            logs_info,
+            'metadata_items_activity.avsc',
             res_verify_token.get('operator'),
-            file_path,
-            res_verify_token.get('container_code'),
+            ConfigClass.KAFKA_ACTIVITY_TOPIC,
         )
 
         # here we assume to overwrite the job with hashcode payload
         # no matter what (if the old doesnot exist or something else happens)
-        status_update_res = await set_status(
+        _ = await set_status(
             res_verify_token.get('session_id'),
             res_verify_token.get('job_id'),
             file_path,
@@ -184,6 +205,6 @@ class APIDataDownload:
             res_verify_token.get('payload', {}),
         )
 
-        self.__logger.debug(status_update_res)
+        self.__logger.debug('Set the job status')
 
         return response
