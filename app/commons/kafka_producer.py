@@ -114,7 +114,7 @@ class KakfaProducer:
 
         message = {
             'activity_type': 'upload',
-            'activity_time': datetime.now(),
+            'activity_time': datetime.utcnow(),
             'item_id': source_node.get('id'),
             'item_type': source_node.get('type'),
             'item_name': source_node.get('name'),
