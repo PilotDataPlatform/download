@@ -14,8 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 import aiofiles.os
 import httpx

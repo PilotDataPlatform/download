@@ -18,9 +18,11 @@ import time
 import jwt
 import pytest
 
-from app.resources.download_token_manager import InvalidToken
-from app.resources.download_token_manager import generate_token
-from app.resources.download_token_manager import verify_download_token
+from app.resources.download_token_manager import (
+    InvalidToken,
+    generate_token,
+    verify_download_token,
+)
 
 
 @pytest.mark.asyncio

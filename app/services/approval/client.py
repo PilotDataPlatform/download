@@ -15,10 +15,7 @@
 
 from uuid import uuid4
 
-from sqlalchemy import Column
-from sqlalchemy import MetaData
-from sqlalchemy import Table
-from sqlalchemy import select
+from sqlalchemy import Column, MetaData, Table, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.future import Engine
 

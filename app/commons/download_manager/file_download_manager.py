@@ -15,16 +15,10 @@
 
 import shutil
 import time
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import httpx
-from common import LoggerFactory
-from common import get_boto3_client
+from common import LoggerFactory, get_boto3_client
 from starlette.concurrency import run_in_threadpool
 
 from app.commons.locks import bulk_lock_operation
@@ -33,9 +27,11 @@ from app.models.base_models import EAPIResponseCode
 from app.models.models_data_download import EDataDownloadStatus
 from app.resources.download_token_manager import generate_token
 from app.resources.error_handler import APIException
-from app.resources.helpers import get_files_folder_by_id
-from app.resources.helpers import get_files_folder_recursive
-from app.resources.helpers import set_status
+from app.resources.helpers import (
+    get_files_folder_by_id,
+    get_files_folder_recursive,
+    set_status,
+)
 
 
 async def create_file_download_client(
@@ -244,6 +240,9 @@ class FileDownloadClient:
         else:
             self.result_file_name = self.tmp_folder + '.zip'
 
+        # since the file or files are from some zone/project
+        # use the first file to gather the info for the list
+        first_node = self.files_to_zip[0]
         return await generate_token(
             self.container_code,
             self.container_type,
@@ -251,6 +250,13 @@ class FileDownloadClient:
             self.operator,
             self.session_id,
             self.job_id,
+            payload={
+                'zone': first_node.get('zone'),
+                'parent_path': first_node.get('parent_path'),
+                'type': 'file',
+                'id': first_node.get('id'),
+                'name': first_node.get('name'),
+            },
         )
 
     async def _file_download_worker(self, hash_code: str) -> None:
