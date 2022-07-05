@@ -27,10 +27,7 @@ import sqlalchemy
 from aioredis import StrictRedis
 from async_asgi_testclient import TestClient
 from httpx import Response
-from sqlalchemy import Column
-from sqlalchemy import MetaData
-from sqlalchemy import String
-from sqlalchemy import Table
+from sqlalchemy import Column, MetaData, String, Table
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import create_async_engine
 from starlette.config import environ
@@ -270,19 +267,21 @@ def mock_kafka_producer(monkeypatch):
     async def fake_init_connection():
         pass
 
-    async def fake_send_message(x, y):
+    async def fake_send_message(x, y, z):
         pass
 
     async def fake_validate_message(x, y, z):
         pass
 
-    async def fake_create_activity_log(x, y, z, z1):
+    async def fake_create_activity_log(x, y, z, z1, z2):
         pass
 
     monkeypatch.setattr(KakfaProducer, 'init_connection', lambda x: fake_init_connection())
-    monkeypatch.setattr(KakfaProducer, '_send_message', lambda x, y: fake_send_message(x, y))
+    monkeypatch.setattr(KakfaProducer, '_send_message', lambda x, y, z: fake_send_message(x, y, z))
     monkeypatch.setattr(KakfaProducer, '_validate_message', lambda x, y, z: fake_validate_message(x, y, z))
-    monkeypatch.setattr(KakfaProducer, 'create_activity_log', lambda x, y, z, z1: fake_create_activity_log(x, y, z, z1))
+    monkeypatch.setattr(
+        KakfaProducer, 'create_activity_log', lambda x, y, z, z1, z2: fake_create_activity_log(x, y, z, z1, z2)
+    )
 
 
 @pytest.fixture

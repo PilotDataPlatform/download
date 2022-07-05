@@ -18,25 +18,25 @@ from datetime import datetime
 
 from common import LoggerFactory
 from fastapi import APIRouter
-from fastapi.responses import FileResponse
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi_utils import cbv
 from jwt import ExpiredSignatureError
 from jwt.exceptions import DecodeError
 
 from app.commons.kafka_producer import get_kafka_producer
 from app.config import ConfigClass
-from app.models.base_models import APIResponse
-from app.models.base_models import EAPIResponseCode
-from app.models.models_data_download import EDataDownloadStatus
-from app.models.models_data_download import GetDataDownloadStatusResponse
-from app.resources.download_token_manager import InvalidToken
-from app.resources.download_token_manager import verify_download_token
-from app.resources.error_handler import ECustomizedError
-from app.resources.error_handler import catch_internal
-from app.resources.error_handler import customized_error_template
-from app.resources.helpers import get_status
-from app.resources.helpers import set_status
+from app.models.base_models import APIResponse, EAPIResponseCode
+from app.models.models_data_download import (
+    EDataDownloadStatus,
+    GetDataDownloadStatusResponse,
+)
+from app.resources.download_token_manager import InvalidToken, verify_download_token
+from app.resources.error_handler import (
+    ECustomizedError,
+    catch_internal,
+    customized_error_template,
+)
+from app.resources.helpers import get_status, set_status
 
 # from app.resources.helpers import update_file_operation_logs
 
@@ -182,8 +182,13 @@ class APIDataDownload:
             **extra_info,
         }
 
-        kp = await get_kafka_producer(ConfigClass.KAFKA_URL, 'test_topic_1')
-        await kp.create_activity_log(logs_info, 'metadata_items_activity.avsc', res_verify_token.get('operator'))
+        kp = await get_kafka_producer()
+        await kp.create_activity_log(
+            logs_info,
+            'metadata_items_activity.avsc',
+            res_verify_token.get('operator'),
+            ConfigClass.KAFKA_ACTIVITY_TOPIC,
+        )
 
         # here we assume to overwrite the job with hashcode payload
         # no matter what (if the old doesnot exist or something else happens)
