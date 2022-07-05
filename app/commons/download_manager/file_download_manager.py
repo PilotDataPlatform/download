@@ -233,7 +233,7 @@ class FileDownloadClient:
             # Note here if minio can be public assessible then the endpoint
             # must be domain name
             boto3_client = await get_boto3_client(
-                ConfigClass.MINIO_PUBLIC_URL, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
+                ConfigClass.MINIO_PUBLIC_URL, token=self.auth_token['at'], https=ConfigClass.MINIO_PUBLIC_HTTPS
             )
             bucket, file_path = await self._parse_object_location(self.files_to_zip[0].get('location'))
             self.result_file_name = await boto3_client.get_download_presigned_url(bucket, file_path)

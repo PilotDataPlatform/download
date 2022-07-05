@@ -60,13 +60,17 @@ class Settings(BaseSettings):
 
     # minio
     MINIO_OPENID_CLIENT: str
+    # this endpoint is internal communication
     MINIO_ENDPOINT: str
     MINIO_HTTPS: bool = False
     KEYCLOAK_URL: str
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
     KEYCLOAK_MINIO_SECRET: str
-    DOMAIN_NAME: str
+    MINIO_PUBLIC_URL: str
+    # by default the minio public will be https
+    # for local testing add the one to .env as False
+    MINIO_PUBLIC_HTTPS: bool = True
 
     # download secret
     DOWNLOAD_KEY: str = 'indoc101'
@@ -112,8 +116,6 @@ class Settings(BaseSettings):
 
         # minio
         self.MINIO_TMP_PATH = self.ROOT_PATH + '/tmp/'
-        http_prefix = 'https://' if self.MINIO_HTTPS else 'http://'
-        self.MINIO_PUBLIC_URL = self.DOMAIN_NAME.replace(http_prefix, '')
 
         # postgres
         self.RDS_DB_URI = self.RDS_DB_URI.replace('postgresql', 'postgresql+asyncpg')

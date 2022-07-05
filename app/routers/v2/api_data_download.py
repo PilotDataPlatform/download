@@ -22,7 +22,7 @@ from common import (
     get_boto3_client,
 )
 from fastapi import APIRouter, BackgroundTasks, Header
-from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi_utils import cbv
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -234,7 +234,6 @@ class APIDataDownload:
         self,
         hash_code: str,
         authorization: Optional[str] = Header(None),
-        refresh_token: Optional[str] = Header(None),
     ) -> Union[StreamingResponse, JSONResponse]:
 
         '''
@@ -264,7 +263,7 @@ class APIDataDownload:
 
         try:
             boto3_client = await get_boto3_client(
-                ConfigClass.MINIO_PUBLIC_URL, token=authorization, https=ConfigClass.MINIO_HTTPS
+                ConfigClass.MINIO_PUBLIC_URL, token=authorization, https=ConfigClass.MINIO_PUBLIC_HTTPS
             )
             presigned_url = await boto3_client.get_download_presigned_url(bucket, file_path)
 
@@ -275,4 +274,4 @@ class APIDataDownload:
             api_response.code = EAPIResponseCode.bad_request
             return api_response.json_response()
 
-        return RedirectResponse(presigned_url)
+        return {'url': presigned_url}
