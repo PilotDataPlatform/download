@@ -175,7 +175,7 @@ class APIDataDownload:
         extra_info = res_verify_token.get('payload')
         logs_info = {
             'activity_type': 'download',
-            'activity_time': datetime.now(),
+            'activity_time': datetime.utcnow(),
             'container_code': res_verify_token.get('container_code'),
             'container_type': 'project',
             'user': res_verify_token.get('operator'),
