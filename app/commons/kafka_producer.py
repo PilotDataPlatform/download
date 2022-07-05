@@ -113,7 +113,7 @@ class KakfaProducer:
         self.logger.info('Create %s activity log to topic: %s' % (operator, topic))
 
         message = {
-            'activity_type': 'upload',
+            'activity_type': 'download',
             'activity_time': datetime.utcnow(),
             'item_id': source_node.get('id'),
             'item_type': source_node.get('type'),

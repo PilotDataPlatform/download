@@ -174,7 +174,7 @@ class APIDataDownload:
         # there is some other infomation
         extra_info = res_verify_token.get('payload')
         logs_info = {
-            'activity_type': 'upload',
+            'activity_type': 'download',
             'activity_time': datetime.now(),
             'container_code': res_verify_token.get('container_code'),
             'container_type': 'project',
