@@ -215,6 +215,9 @@ class FileDownloadClient:
         for file in file_list:
             # flatten the storage url
             file.update({'location': file.get('storage', {}).get('location_uri')})
+            # also make the parent path None to empty string
+            if file.get('parent_path') is None:
+                file.update({'parent_path': ''})
             self.files_to_zip.append(file)
 
         return None

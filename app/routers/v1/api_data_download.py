@@ -183,7 +183,6 @@ class APIDataDownload:
             'user': res_verify_token.get('operator'),
             **extra_info,
         }
-
         kp = await get_kafka_producer()
         await kp.create_activity_log(
             logs_info,
