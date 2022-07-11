@@ -117,11 +117,11 @@ class APIDataDownload:
             if data.container_type == 'project':
                 _ = await self.project_client.get(code=data.container_code)
             elif data.container_type == 'dataset':
-                node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + self.container_code
+                node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + data.container_code
                 with httpx.Client() as client:
-                    response = client.get(node_query_url)
-                if response.status_code != 200:
-                    raise Exception('Fetch dataset error: %s', response.json())
+                    dataset_response = client.get(node_query_url)
+                if dataset_response.status_code != 200:
+                    raise Exception('Fetch dataset error: %s', dataset_response.json())
 
         except ProjectNotFoundException as e:
             response.error_msg = e.error_msg
@@ -167,7 +167,6 @@ class APIDataDownload:
                 f'Starting background job for: {data.container_code}.'
                 f'number of files {len(download_client.files_to_zip)}'
             )
-
             # start the background job for the zipping
             background_tasks.add_task(download_client.background_worker, hash_code)
 
