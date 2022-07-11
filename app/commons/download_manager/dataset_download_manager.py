@@ -214,11 +214,11 @@ class DatasetDownloadClient(FileDownloadClient):
         # NOTE: the status of job will be updated ONLY after the zip worker
         await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': hash_code})
 
-        # this might need to move into the download api not in the pre
-        await self.update_activity_log(
-            dataset_geid,
-            dataset_geid,
-            'DATASET_DOWNLOAD_SUCCEED',
-        )
+        # # this might need to move into the download api not in the pre
+        # await self.update_activity_log(
+        #     dataset_geid,
+        #     dataset_geid,
+        #     'DATASET_DOWNLOAD_SUCCEED',
+        # )
 
         return None
