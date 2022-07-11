@@ -392,20 +392,21 @@ class FileDownloadClient:
         # NOTE: the status of job will be updated ONLY after the zip worker
         await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': hash_code})
 
-        # add the activity logs
-        if self.container_type == 'dataset':
+        # # add the activity logs
+        # MOVE TO PRE
+        # if self.container_type == 'dataset':
 
-            # REMOVE THIS AFTER MIGRATION
-            node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + self.container_code
-            with httpx.Client() as client:
-                response = client.get(node_query_url)
-            dataset_geid = response.json().get('result', {}).get('id')
+        #     # REMOVE THIS AFTER MIGRATION
+        #     node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + self.container_code
+        #     with httpx.Client() as client:
+        #         response = client.get(node_query_url)
+        #     dataset_geid = response.json().get('result', {}).get('id')
 
-            filenames = ['/'.join(i['location'].split('/')[7:]) for i in self.files_to_zip]
-            await self.update_activity_log(
-                dataset_geid,
-                filenames,
-                'DATASET_FILEDOWNLOAD_SUCCEED',
-            )
+        #     filenames = ['/'.join(i['location'].split('/')[7:]) for i in self.files_to_zip]
+        #     await self.update_activity_log(
+        #         dataset_geid,
+        #         filenames,
+        #         'DATASET_FILEDOWNLOAD_SUCCEED',
+        #     )
 
         return None

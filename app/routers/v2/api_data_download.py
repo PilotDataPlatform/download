@@ -15,6 +15,7 @@
 
 from typing import Optional, Union
 
+import httpx
 from common import (
     LoggerFactory,
     ProjectClient,
@@ -115,6 +116,12 @@ class APIDataDownload:
         try:
             if data.container_type == 'project':
                 _ = await self.project_client.get(code=data.container_code)
+            elif data.container_type == 'dataset':
+                node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + self.container_code
+                with httpx.Client() as client:
+                    response = client.get(node_query_url)
+                if response.status_code != 200:
+                    raise Exception('Fetch dataset error: %s', response.json())
 
         except ProjectNotFoundException as e:
             response.error_msg = e.error_msg

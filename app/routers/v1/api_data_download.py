@@ -165,21 +165,13 @@ class APIDataDownload:
             filename = os.path.basename(file_path)
             response = FileResponse(path=file_path, filename=filename)
 
-        # Add download file log for project
-        # will be removed after kafka consumer setup
-        # await update_file_operation_logs(
-        #     res_verify_token.get('operator'),
-        #     file_path,
-        #     res_verify_token.get('container_code'),
-        # )
-
-        # there is some other infomation
+        # there is some other infomation for activity logs
         extra_info = res_verify_token.get('payload')
         logs_info = {
             'activity_type': 'download',
             'activity_time': datetime.utcnow(),
             'container_code': res_verify_token.get('container_code'),
-            'container_type': 'project',
+            'container_type': res_verify_token.get('container_type'),
             'user': res_verify_token.get('operator'),
             **extra_info,
         }
