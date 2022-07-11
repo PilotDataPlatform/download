@@ -35,6 +35,7 @@ async def test_download_client_without_files(httpx_mock, mock_boto3):
         auth_token={'at': 'token', 'rt': 'refresh_token'},
         operator='me',
         container_code='any_code',
+        container_id='fake_id',
         container_type='project',
         session_id='1234',
     )
@@ -69,6 +70,7 @@ async def test_download_client_add_file(httpx_mock):
         auth_token={'at': 'token', 'rt': 'refresh_token'},
         operator='me',
         container_code='any_code',
+        container_id='fake_id',
         container_type='project',
         session_id='1234',
     )
@@ -90,6 +92,7 @@ async def test_download_dataset_add_schemas(httpx_mock):
         auth_token={'at': 'token', 'rt': 'refresh_token'},
         operator='me',
         container_code='any_code',
+        container_id='fake_id',
         container_type='project',
         session_id='1234',
     )

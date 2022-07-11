@@ -30,6 +30,7 @@ async def create_dataset_download_client(
     auth_token: Dict[str, Any],
     operator: str,
     container_code: str,
+    container_id: str,
     container_type: str,
     session_id: str,
 ):
@@ -57,6 +58,7 @@ async def create_dataset_download_client(
         auth_token=auth_token,
         operator=operator,
         container_code=container_code,
+        container_id=container_id,
         container_type=container_type,
         session_id=session_id,
     )
@@ -72,6 +74,7 @@ class DatasetDownloadClient(FileDownloadClient):
         auth_token: Dict[str, Any],
         operator: str,
         container_code: str,
+        container_id: str,
         container_type: str,
         session_id: str,
     ):
@@ -83,6 +86,8 @@ class DatasetDownloadClient(FileDownloadClient):
             session_id,
             [],
         )
+
+        self.container_id = container_id
 
     async def add_schemas(self, dataset_geid: str) -> None:
         '''
@@ -199,13 +204,13 @@ class DatasetDownloadClient(FileDownloadClient):
 
         await self._file_download_worker(hash_code)
 
-        # REMOVE THIS AFTER MIGRATION
-        node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + self.container_code
-        with httpx.Client() as client:
-            response = client.get(node_query_url)
-        dataset_geid = response.json().get('result', {}).get('id')
+        # # REMOVE THIS AFTER MIGRATION
+        # node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + self.container_code
+        # with httpx.Client() as client:
+        #     response = client.get(node_query_url)
+        # dataset_geid = response.json().get('result', {}).get('id')
 
-        await self.add_schemas(dataset_geid)  # update here once back
+        await self.add_schemas(self.container_id)  # update here once back
 
         # here is different since the dataset will have the default schema
         # no matter how, we will zip all the file under the temp folder

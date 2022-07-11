@@ -111,7 +111,7 @@ class APIDataDownload:
             'rt': refresh_token,
         }
 
-        # todo somehow check the container exist after migration
+        # check the container exist
         self.__logger.info(f'Check container: {data.container_type} {data.container_code}.')
         try:
             if data.container_type == 'project':
@@ -223,12 +223,17 @@ class APIDataDownload:
         }
 
         # TODO somehow check the dataset exist after migration
+        node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + data.dataset_code
+        with httpx.Client() as client:
+            response = client.get(node_query_url)
+        dataset_id = response.json().get('result', {}).get('id')
 
         self.__logger.info('Initialize the dataset download client')
         download_client = await create_dataset_download_client(
             minio_token,
             data.operator,
             data.dataset_code,
+            dataset_id,
             'dataset',
             session_id,
         )
