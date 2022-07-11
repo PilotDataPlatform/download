@@ -256,10 +256,10 @@ class FileDownloadClient:
             self.session_id,
             self.job_id,
             payload={
-                'zone': first_node.get('zone'),
-                'parent_path': first_node.get('parent_path'),
+                'zone': first_node.get('zone', 0),
+                'parent_path': first_node.get('parent_path', ''),
                 'type': 'file',
-                'id': first_node.get('id'),
+                'id': first_node.get('id', ''),
                 'name': file_name,
             },
         )

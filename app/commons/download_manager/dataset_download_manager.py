@@ -145,6 +145,13 @@ class DatasetDownloadClient(FileDownloadClient):
             self.operator,
             self.session_id,
             self.job_id,
+            payload={
+                'zone': 1,  # dataset files are always in core zone
+                'parent_path': '',
+                'type': 'file',
+                'id': '',
+                'name': self.result_file_name,
+            },
         )
 
     async def add_files_to_list(self, dataset_code):
