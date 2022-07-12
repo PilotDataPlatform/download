@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from datetime import datetime
 
 from common import LoggerFactory
 from fastapi import APIRouter
@@ -23,7 +22,6 @@ from fastapi_utils import cbv
 from jwt import ExpiredSignatureError
 from jwt.exceptions import DecodeError
 
-from app.commons.kafka_producer import get_kafka_producer
 from app.config import ConfigClass
 from app.models.base_models import APIResponse, EAPIResponseCode
 from app.models.models_data_download import (
@@ -164,24 +162,6 @@ class APIDataDownload:
 
             filename = os.path.basename(file_path)
             response = FileResponse(path=file_path, filename=filename)
-
-        # there is some other infomation for activity logs
-        extra_info = res_verify_token.get('payload')
-        logs_info = {
-            'activity_type': 'download',
-            'activity_time': datetime.utcnow(),
-            'container_code': res_verify_token.get('container_code'),
-            'container_type': res_verify_token.get('container_type'),
-            'user': res_verify_token.get('operator'),
-            **extra_info,
-        }
-        kp = await get_kafka_producer()
-        await kp.create_activity_log(
-            logs_info,
-            'metadata_items_activity.avsc',
-            res_verify_token.get('operator'),
-            ConfigClass.KAFKA_ACTIVITY_TOPIC,
-        )
 
         # here we assume to overwrite the job with hashcode payload
         # no matter what (if the old doesnot exist or something else happens)

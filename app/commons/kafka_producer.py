@@ -15,7 +15,6 @@
 
 import io
 import os
-from datetime import datetime
 
 from aiokafka import AIOKafkaProducer
 from common import LoggerFactory
@@ -94,40 +93,25 @@ class KakfaProducer:
 
         return message
 
-    async def create_activity_log(self, source_node: dict, schema_name: str, operator: str, topic: str):
+    async def create_activity_log(self, message: dict, schema_name: str, topic: str):
         '''
         Summary:
             the function will validate the dict message with specified schema
             and return the byte message to caller
 
         Parameter:
-            - source_node(dict): the source node contains item infomation
+            - message(dict): the message will send to kafka
             - schema_name(str): the name of schema
-            - operator(str): the user who take the action
             - topic(str): the target topic that message will be sent into
 
         Return:
             - byte message
         '''
 
-        self.logger.info('Create %s activity log to topic: %s' % (operator, topic))
-
-        message = {
-            'activity_type': 'download',
-            'activity_time': datetime.utcnow(),
-            'item_id': source_node.get('id'),
-            'item_type': source_node.get('type'),
-            'item_name': source_node.get('name'),
-            'item_parent_path': source_node.get('parent_path'),
-            'container_code': source_node.get('container_code'),
-            'container_type': source_node.get('container_type'),
-            'zone': source_node.get('zone'),
-            'user': operator,
-            'imported_from': '',
-            'changes': [],
-        }
+        self.logger.info('Create activity log to topic: %s' % (topic))
 
         byte_message = await self._validate_message(schema_name, message)
+        self.logger.info('byte message is: %s' % str(byte_message))
         await self._send_message(topic, byte_message)
 
         return
@@ -146,6 +130,6 @@ async def get_kafka_producer() -> KakfaProducer:
         - KakfaProducer: the global variable
     '''
 
-    await kakfa_producer.init_connection()
+    # await kakfa_producer.init_connection()
 
     return kakfa_producer

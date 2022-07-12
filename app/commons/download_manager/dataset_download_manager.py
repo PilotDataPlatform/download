@@ -14,16 +14,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+from datetime import datetime
 from typing import Any, Dict
 
 import aiofiles.os
 import httpx
 
 from app.commons.download_manager.file_download_manager import FileDownloadClient
+from app.commons.kafka_producer import get_kafka_producer
 from app.config import ConfigClass
 from app.models.models_data_download import EDataDownloadStatus
 from app.resources.download_token_manager import generate_token
 from app.resources.helpers import get_files_folder_recursive
+
+DATASET_MESSAGE_SCHEMA = 'dataset.activity.avsc'
 
 
 async def create_dataset_download_client(
@@ -150,14 +154,39 @@ class DatasetDownloadClient(FileDownloadClient):
             self.operator,
             self.session_id,
             self.job_id,
-            payload={
-                'zone': 1,  # dataset files are always in core zone
-                'parent_path': '',
-                'type': 'file',
-                'id': '',
-                'name': self.result_file_name,
-            },
         )
+
+    async def update_activity_log(self) -> dict:
+        '''
+        Summary:
+            The function will create activity log for dataset file download
+            ONLY. this file download will send to item activity log index
+
+        Return:
+            - dict: http reponse
+        '''
+
+        kp = await get_kafka_producer()
+
+        message = {
+            'activity_type': 'download',
+            'activity_time': datetime.utcnow(),
+            'container_code': self.container_code,
+            # the version is not necessary for the datset logs. The download logic
+            # can get the version but this need some extra efforts.
+            'version': None,
+            'target_name': self.result_file_name,
+            'user': self.operator,
+            'changes': [],
+        }
+
+        await kp.create_activity_log(
+            message,
+            DATASET_MESSAGE_SCHEMA,
+            ConfigClass.KAFKA_DATASET_ACTIVITY_TOPIC,
+        )
+
+        return
 
     async def add_files_to_list(self, dataset_code):
         '''
@@ -204,12 +233,6 @@ class DatasetDownloadClient(FileDownloadClient):
 
         await self._file_download_worker(hash_code)
 
-        # # REMOVE THIS AFTER MIGRATION
-        # node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + self.container_code
-        # with httpx.Client() as client:
-        #     response = client.get(node_query_url)
-        # dataset_geid = response.json().get('result', {}).get('id')
-
         await self.add_schemas(self.container_id)  # update here once back
 
         # here is different since the dataset will have the default schema
@@ -219,11 +242,6 @@ class DatasetDownloadClient(FileDownloadClient):
         # NOTE: the status of job will be updated ONLY after the zip worker
         await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': hash_code})
 
-        # # this might need to move into the download api not in the pre
-        # await self.update_activity_log(
-        #     dataset_geid,
-        #     dataset_geid,
-        #     'DATASET_DOWNLOAD_SUCCEED',
-        # )
+        await self.update_activity_log()
 
         return None

@@ -16,12 +16,13 @@
 import os
 import shutil
 import time
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import httpx
 from common import LoggerFactory, get_boto3_client
 from starlette.concurrency import run_in_threadpool
 
+from app.commons.kafka_producer import get_kafka_producer
 from app.commons.locks import bulk_lock_operation
 from app.config import ConfigClass
 from app.models.base_models import EAPIResponseCode
@@ -33,6 +34,8 @@ from app.resources.helpers import (
     get_files_folder_recursive,
     set_status,
 )
+
+ITEM_MESSAGE_SCHEMA = 'metadata_items_activity.avsc'
 
 
 async def create_file_download_client(
@@ -233,8 +236,6 @@ class FileDownloadClient:
             - str: hash code
         '''
 
-        first_node = self.files_to_zip[0]
-        file_name = None
         if len(self.files_to_zip) == 1:
             # Note here if minio can be public assessible then the endpoint
             # must be domain name
@@ -243,14 +244,10 @@ class FileDownloadClient:
             )
             bucket, file_path = await self._parse_object_location(self.files_to_zip[0].get('location'))
             self.result_file_name = await boto3_client.get_download_presigned_url(bucket, file_path)
-            file_name = first_node.get('name')
         else:
             self.result_file_name = self.tmp_folder + '.zip'
-            file_name = os.path.basename(self.result_file_name)
 
         # since the file or files are from some zone/project
-        # use the first file to gather the info for the list
-        first_node = self.files_to_zip[0]
         return await generate_token(
             self.container_code,
             self.container_type,
@@ -258,13 +255,6 @@ class FileDownloadClient:
             self.operator,
             self.session_id,
             self.job_id,
-            payload={
-                'zone': first_node.get('zone', 0),
-                'parent_path': first_node.get('parent_path', ''),
-                'type': 'file',
-                'id': first_node.get('id', ''),
-                'name': file_name,
-            },
         )
 
     async def _file_download_worker(self, hash_code: str) -> None:
@@ -318,42 +308,46 @@ class FileDownloadClient:
 
         return None
 
-    async def update_activity_log(self, dataset_geid: str, source_entry: list, event_type: str) -> dict:
+    async def update_activity_log(self) -> dict:
         '''
         Summary:
             The function will create activity log for dataset file download
-            ONLY.
-
-        Parameter:
-            - dataset_geid(str): the identifier of dataset
-            - source_entry(list): the list of file has been downloaded
-            - event_type(str): in download service this will be DATASET_FILEDOWNLOAD_SUCCEED
+            ONLY. this file download will send to item activity log index
 
         Return:
             - dict: http reponse
         '''
 
-        url = ConfigClass.QUEUE_SERVICE + 'broker/pub'
-        post_json = {
-            'event_type': event_type,
-            'payload': {
-                'dataset_geid': dataset_geid,
-                'operator': self.operator,
-                'action': 'DOWNLOAD',
-                'resource': 'Dataset',
-                'detail': {'source': source_entry},
-            },
-            'queue': 'dataset_actlog',
-            'routing_key': '',
-            'exchange': {'name': 'DATASET_ACTS', 'type': 'fanout'},
+        kp = await get_kafka_producer()
+
+        # generate the some basic info for log. if multiple files are
+        # downloaded, hide some infomation to aviod misleading
+        source_node = self.files_to_zip[0]
+        if len(self.files_to_zip) != 1:
+            source_node.update({'id': '', 'name': os.path.basename(self.result_file_name)})
+
+        message = {
+            'activity_type': 'download',
+            'activity_time': datetime.utcnow(),
+            'item_id': source_node.get('id'),
+            'item_type': source_node.get('type'),
+            'item_name': source_node.get('name'),
+            'item_parent_path': source_node.get('parent_path'),
+            'container_code': source_node.get('container_code'),
+            'container_type': source_node.get('container_type'),
+            'zone': source_node.get('zone'),
+            'user': self.operator,
+            'imported_from': '',
+            'changes': [],
         }
-        async with httpx.AsyncClient() as client:
-            res = await client.post(url, json=post_json)
-        if res.status_code != 200:
-            error_msg = 'update_activity_log {}: {}'.format(res.status_code, res.text)
-            self.logger.error(error_msg)
-            raise Exception(error_msg)
-        return res.json()
+
+        await kp.create_activity_log(
+            message,
+            ITEM_MESSAGE_SCHEMA,
+            ConfigClass.KAFKA_ITEM_ACTIVITY_TOPIC,
+        )
+
+        return
 
     async def _zip_worker(self):
         '''
@@ -392,7 +386,8 @@ class FileDownloadClient:
         # NOTE: the status of job will be updated ONLY after the zip worker
         await self.set_status(EDataDownloadStatus.READY_FOR_DOWNLOADING, payload={'hash_code': hash_code})
 
-        # # add the activity logs
+        # add the activity logs
+        await self.update_activity_log()
         # MOVE TO PRE
         # if self.container_type == 'dataset':
 

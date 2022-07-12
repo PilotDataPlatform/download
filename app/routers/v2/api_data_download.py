@@ -22,7 +22,7 @@ from common import (
     ProjectNotFoundException,
     get_boto3_client,
 )
-from fastapi import APIRouter, BackgroundTasks, Header
+from fastapi import APIRouter, BackgroundTasks, Cookie, Header
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi_utils import cbv
 from sqlalchemy import MetaData
@@ -75,7 +75,7 @@ class APIDataDownload:
         background_tasks: BackgroundTasks,
         authorization: Optional[str] = Header(None),
         refresh_token: Optional[str] = Header(None),
-        session_id: Optional[str] = Header(None),
+        sessionId: str = Cookie(None),
     ) -> JSONResponse:
         '''
         Summary:
@@ -97,8 +97,8 @@ class APIDataDownload:
         Header:
              - authorization(str): the access token from auth service
              - refresh_token(str): the refresh token from auth service
-             - session_id(str): the session id generate for each user login
-
+        Cookies:
+             - sessionId(str): the session id generate for each user login
 
         Return:
             - 200
@@ -156,7 +156,7 @@ class APIDataDownload:
                 data.operator,
                 data.container_code,
                 data.container_type,
-                session_id,
+                sessionId,
                 file_geids_to_include,
             )
             hash_code = await download_client.generate_hash_code()
@@ -190,7 +190,7 @@ class APIDataDownload:
         background_tasks: BackgroundTasks,
         authorization: Optional[str] = Header(None),
         refresh_token: Optional[str] = Header(None),
-        session_id: Optional[str] = Header(None),
+        sessionId: str = Cookie(None),
     ) -> JSONResponse:
 
         '''
@@ -208,7 +208,8 @@ class APIDataDownload:
         Header:
              - authorization(str): the access token from auth service
              - refresh_token(str): the refresh token from auth service
-             - session_id(str): the session id generate for each user login
+        Cookies:
+             - sessionId(str): the session id generate for each user login
 
         Return:
             - 200
@@ -234,7 +235,7 @@ class APIDataDownload:
             data.dataset_code,
             dataset_id,
             'dataset',
-            session_id,
+            sessionId,
         )
         hash_code = await download_client.generate_hash_code()
         status_result = await download_client.set_status(EDataDownloadStatus.ZIPPING, payload={'hash_code': hash_code})

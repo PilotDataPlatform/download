@@ -88,7 +88,8 @@ class Settings(BaseSettings):
 
     # kafka
     KAFKA_URL: str
-    KAFKA_ACTIVITY_TOPIC: str = 'metadata.items.activity'
+    KAFKA_ITEM_ACTIVITY_TOPIC: str = 'metadata.items.activity'
+    KAFKA_DATASET_ACTIVITY_TOPIC: str = 'dataset.activity'
 
     OPEN_TELEMETRY_ENABLED: bool = False
     OPEN_TELEMETRY_HOST: str = '127.0.0.1'
