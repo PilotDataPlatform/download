@@ -99,6 +99,7 @@ async def test_v2_download_pre_return_200_when_approval_request_id(
     metadata,
     mock_boto3,
     mocker,
+    mock_kafka_producer,
 ):
 
     mocker.patch('common.ProjectClient.get', return_value={'any': 'any', 'global_entity_id': 'fake_global_entity_id'})
@@ -116,7 +117,9 @@ async def test_v2_download_pre_return_200_when_approval_request_id(
                 'parent_path': 'admin',
                 'type': 'file',
                 'container_code': 'fake_project_code',
+                'container_type': 'project',
                 'zone': 0,
+                'name': 'test_item',
             }
         },
     )
@@ -153,6 +156,7 @@ async def test_v2_download_pre_return_200_when_label_is_not_Folder(
     metadata,
     mock_boto3,
     mocker,
+    mock_kafka_producer,
 ):
 
     mocker.patch('common.ProjectClient.get', return_value={'any': 'any', 'global_entity_id': 'fake_global_entity_id'})
@@ -170,7 +174,9 @@ async def test_v2_download_pre_return_200_when_label_is_not_Folder(
                 'parent_path': 'admin',
                 'type': 'file',
                 'container_code': 'fake_project_code',
+                'container_type': 'project',
                 'zone': 0,
+                'name': 'test_item',
             }
         },
     )
@@ -207,6 +213,7 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(
     metadata,
     mock_boto3,
     mocker,
+    mock_kafka_producer,
 ):
 
     mocker.patch('common.ProjectClient.get', return_value={'any': 'any', 'global_entity_id': 'fake_global_entity_id'})
@@ -243,7 +250,9 @@ async def test_v2_download_pre_return_200_when_type_is_Folder(
                     'owner': 'me',
                     'parent_path': 'admin',
                     'container_code': container_code,
+                    'container_type': 'project',
                     'zone': 0,
+                    'name': 'test_item_2',
                 }
             ]
         },

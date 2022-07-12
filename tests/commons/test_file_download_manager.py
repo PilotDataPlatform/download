@@ -72,7 +72,7 @@ async def test_download_client_add_file(httpx_mock):
     assert download_client.files_to_zip[0].get('id') == 'geid_1'
 
 
-async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mock, mock_boto3):
+async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mock, mock_boto3, mock_kafka_producer):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/item/geid_1/',
@@ -86,7 +86,9 @@ async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(httpx_mo
                 'parent_path': 'admin',
                 'type': 'file',
                 'container_code': 'fake_project_code',
+                'container_type': 'project',
                 'zone': 0,
+                'name': 'test_item',
             }
         },
     )

@@ -18,7 +18,9 @@ import pytest
 pytestmark = pytest.mark.asyncio
 
 
-async def test_v2_dataset_download_pre_return_200_when_success(client, httpx_mock, mock_boto3, mocker):
+async def test_v2_dataset_download_pre_return_200_when_success(
+    client, httpx_mock, mock_boto3, mocker, mock_kafka_producer
+):
     dataset_code = 'fake_project_code'
 
     httpx_mock.add_response(
@@ -75,7 +77,9 @@ async def test_v2_dataset_download_pre_return_200_when_success(client, httpx_moc
     assert result['payload']['hash_code']
 
 
-async def test_v2_dataset_download_pre_empty_dataset_return_200_when_success(client, httpx_mock, mock_boto3, mocker):
+async def test_v2_dataset_download_pre_empty_dataset_return_200_when_success(
+    client, httpx_mock, mock_boto3, mocker, mock_kafka_producer
+):
     dataset_code = 'fake_project_code'
 
     httpx_mock.add_response(
