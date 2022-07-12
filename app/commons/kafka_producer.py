@@ -130,6 +130,6 @@ async def get_kafka_producer() -> KakfaProducer:
         - KakfaProducer: the global variable
     '''
 
-    # await kakfa_producer.init_connection()
+    await kakfa_producer.init_connection()
 
     return kakfa_producer
