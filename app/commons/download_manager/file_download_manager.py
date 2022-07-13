@@ -324,7 +324,7 @@ class FileDownloadClient:
         # downloaded, hide some infomation to aviod misleading
         source_node = self.files_to_zip[0]
         if len(self.files_to_zip) != 1:
-            source_node.update({'id': '', 'name': os.path.basename(self.result_file_name)})
+            source_node.update({'id': None, 'name': os.path.basename(self.result_file_name)})
 
         message = {
             'activity_type': 'download',
