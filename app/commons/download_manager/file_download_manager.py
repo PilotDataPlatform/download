@@ -322,7 +322,9 @@ class FileDownloadClient:
                 await self.boto3_client.downlaod_object(bucket, obj_path, self.tmp_folder + '/' + obj_path)
 
         except Exception as e:
-            self.logger.error('Error in background job: ' + (str(e)))
+            self.logger.error(
+                'Error in background job: ' + (str(e)),
+            )
             payload = {'error_msg': str(e)}
             await self.set_status(EDataDownloadStatus.CANCELLED, payload=payload)
             raise Exception(str(e))

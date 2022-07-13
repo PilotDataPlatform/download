@@ -260,10 +260,10 @@ class APIDataDownload:
 
         self.__logger.info('Recieving request on /dataset/download/pre')
         api_response = APIResponse()
-        minio_token = {
-            'at': authorization,
-            'rt': refresh_token,
-        }
+        # minio_token = {
+        #     'at': authorization,
+        #     'rt': refresh_token,
+        # }
 
         # TODO somehow check the dataset exist after migration
         node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + data.dataset_code
@@ -273,7 +273,7 @@ class APIDataDownload:
 
         self.__logger.info('Initialize the dataset download client')
         download_client = await create_dataset_download_client(
-            minio_token,
+            self.boto3_clients,
             data.operator,
             data.dataset_code,
             dataset_id,
