@@ -116,8 +116,6 @@ class APIDataDownload:
         self,
         data: PreDataDownloadPOST,
         background_tasks: BackgroundTasks,
-        authorization: Optional[str] = Header(None),
-        refresh_token: Optional[str] = Header(None),
         sessionId: str = Cookie(None),
     ) -> JSONResponse:
         '''
@@ -149,10 +147,6 @@ class APIDataDownload:
 
         self.__logger.info('Recieving request on /download/pre/')
         response = APIResponse()
-        # minio_token = {
-        #     'at': authorization,
-        #     'rt': refresh_token,
-        # }
 
         # check the container exist
         self.__logger.info(f'Check container: {data.container_type} {data.container_code}.')
@@ -231,8 +225,6 @@ class APIDataDownload:
         self,
         data: DatasetPrePOST,
         background_tasks: BackgroundTasks,
-        authorization: Optional[str] = Header(None),
-        refresh_token: Optional[str] = Header(None),
         sessionId: str = Cookie(None),
     ) -> JSONResponse:
 
@@ -260,12 +252,8 @@ class APIDataDownload:
 
         self.__logger.info('Recieving request on /dataset/download/pre')
         api_response = APIResponse()
-        # minio_token = {
-        #     'at': authorization,
-        #     'rt': refresh_token,
-        # }
 
-        # TODO somehow check the dataset exist after migration
+        # check the dataset exist
         node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + data.dataset_code
         with httpx.Client() as client:
             response = client.get(node_query_url)

@@ -263,13 +263,10 @@ class FileDownloadClient:
         '''
 
         if self.folder_download or len(self.files_to_zip) > 1:
-            # Note here if minio can be public assessible then the endpoint
-            # must be domain name
-            # boto3_client = await get_boto3_client(
-            #     ConfigClass.MINIO_PUBLIC_URL, token=self.auth_token['at'], https=ConfigClass.MINIO_PUBLIC_HTTPS
-            # )
             self.result_file_name = self.tmp_folder + '.zip'
         else:
+            # Note here if minio can be public assessible then the endpoint
+            # must be domain name
             bucket, file_path = await self._parse_object_location(self.files_to_zip[0].get('location'))
             self.result_file_name = await self.boto3_client.get_download_presigned_url(bucket, file_path)
 
@@ -312,11 +309,7 @@ class FileDownloadClient:
                 lock_keys.append('%s/%s/%s' % (bucket, nodes.get('parent_path'), nodes.get('name')))
             await bulk_lock_operation(lock_keys, 'read')
 
-            # download to tmp dir and zip it
-            # boto3_client = await get_boto3_client(
-            #     ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
-            # )
-
+            # then download from object storage
             for obj in self.files_to_zip:
                 bucket, obj_path = await self._parse_object_location(obj.get('location'))
                 await self.boto3_client.downlaod_object(bucket, obj_path, self.tmp_folder + '/' + obj_path)
