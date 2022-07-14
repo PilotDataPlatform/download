@@ -19,7 +19,8 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from common import LoggerFactory, get_boto3_client
+from common import LoggerFactory
+from common.object_storage_adaptor.boto3_client import Boto3Client
 from starlette.concurrency import run_in_threadpool
 
 from app.commons.kafka_producer import get_kafka_producer
@@ -40,7 +41,7 @@ ITEM_MESSAGE_SCHEMA = 'metadata_items_activity.avsc'
 
 async def create_file_download_client(
     files: List[Dict[str, Any]],
-    auth_token: Dict[str, str],
+    boto3_clients: Dict[str, Boto3Client],
     operator: str,
     container_code: str,
     container_type: str,
@@ -58,7 +59,9 @@ async def create_file_download_client(
 
     Parameter:
         - files(list): the list of file will be added into object
-        - auth_token(dict of str pairs): the auth/refresh token to access minio
+        - boto3_clients(dict of Boto3Client):
+            - boto3_internal: the instance of boto3client with private domain
+            - boto3_public: the instance of boto3client with public domain
         - operator(string): the user who takes the operation
         - container_code(string): the unique code for project/dataset
         - container_type(string): the type will be dataset or project
@@ -70,7 +73,7 @@ async def create_file_download_client(
         - FileDownloadClient
     '''
     download_client = FileDownloadClient(
-        auth_token=auth_token,
+        # auth_token=auth_token,
         operator=operator,
         container_code=container_code,
         container_type=container_type,
@@ -83,6 +86,9 @@ async def create_file_download_client(
     for file in files:
         await download_client.add_files_to_list(file['id'])
 
+    # set the boto3 client between public and private domain
+    await download_client._set_connection(boto3_clients)
+
     if len(download_client.files_to_zip) < 1 and container_type == 'project':
         error_msg = '[Invalid file amount] must greater than 0'
         download_client.logger.error(error_msg)
@@ -94,7 +100,7 @@ async def create_file_download_client(
 class FileDownloadClient:
     def __init__(
         self,
-        auth_token: Dict[str, Any],
+        # auth_token: Dict[str, Any],
         operator: str,
         container_code: str,
         container_type: str,
@@ -108,7 +114,7 @@ class FileDownloadClient:
         self.container_code = container_code
         self.tmp_folder = ConfigClass.MINIO_TMP_PATH + container_type + container_code + '_' + str(time.time())
         self.result_file_name = ''
-        self.auth_token = auth_token
+        # self.auth_token = auth_token
         self.session_id = session_id
         self.container_type = container_type
         self.file_geids_to_include = file_geids_to_include
@@ -118,7 +124,31 @@ class FileDownloadClient:
         # stream back the zip file
         self.folder_download = False
 
+        # if number of file is 1 without any folder, the boto3_client
+        # will use the instance with private domain. Otherwise, it will
+        # use the public domain
+        self.boto3_client = None
+
         self.logger = LoggerFactory('file_download_manager').get_logger()
+
+    async def _set_connection(self, boto3_clients: Dict[str, Boto3Client]):
+        '''
+        Summary:
+            if number of file is 1 without any folder, the boto3_client
+            will use the instance with private domain. Otherwise, it will
+            use the public domain
+        Parameter:
+            - boto3_clients(dict of Boto3Client):
+                - boto3_internal: the instance of boto3client with private domain
+                - boto3_public: the instance of boto3client with public domain
+        '''
+
+        if self.folder_download or len(self.files_to_zip) > 1:
+            self.boto3_client = boto3_clients.get('boto3_internal')
+        else:
+            self.boto3_client = boto3_clients.get('boto3_public')
+
+        return
 
     async def _parse_object_location(self, location: str) -> Tuple[str, str]:
         '''
@@ -236,16 +266,13 @@ class FileDownloadClient:
             - str: hash code
         '''
 
-        if len(self.files_to_zip) == 1:
+        if self.folder_download or len(self.files_to_zip) > 1:
+            self.result_file_name = self.tmp_folder + '.zip'
+        else:
             # Note here if minio can be public assessible then the endpoint
             # must be domain name
-            boto3_client = await get_boto3_client(
-                ConfigClass.MINIO_PUBLIC_URL, token=self.auth_token['at'], https=ConfigClass.MINIO_PUBLIC_HTTPS
-            )
             bucket, file_path = await self._parse_object_location(self.files_to_zip[0].get('location'))
-            self.result_file_name = await boto3_client.get_download_presigned_url(bucket, file_path)
-        else:
-            self.result_file_name = self.tmp_folder + '.zip'
+            self.result_file_name = await self.boto3_client.get_download_presigned_url(bucket, file_path)
 
         # since the file or files are from some zone/project
         return await generate_token(
@@ -286,17 +313,15 @@ class FileDownloadClient:
                 lock_keys.append('%s/%s/%s' % (bucket, nodes.get('parent_path'), nodes.get('name')))
             await bulk_lock_operation(lock_keys, 'read')
 
-            # download to tmp dir and zip it
-            boto3_client = await get_boto3_client(
-                ConfigClass.MINIO_ENDPOINT, token=self.auth_token['at'], https=ConfigClass.MINIO_HTTPS
-            )
-
+            # then download from object storage
             for obj in self.files_to_zip:
                 bucket, obj_path = await self._parse_object_location(obj.get('location'))
-                await boto3_client.downlaod_object(bucket, obj_path, self.tmp_folder + '/' + obj_path)
+                await self.boto3_client.downlaod_object(bucket, obj_path, self.tmp_folder + '/' + obj_path)
 
         except Exception as e:
-            self.logger.error('Error in background job: ' + (str(e)))
+            self.logger.error(
+                'Error in background job: ' + (str(e)),
+            )
             payload = {'error_msg': str(e)}
             await self.set_status(EDataDownloadStatus.CANCELLED, payload=payload)
             raise Exception(str(e))

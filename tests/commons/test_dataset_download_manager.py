@@ -22,7 +22,7 @@ from app.commons.download_manager.dataset_download_manager import (
 pytestmark = pytest.mark.asyncio
 
 
-async def test_download_client_without_files(httpx_mock, mock_boto3):
+async def test_download_client_without_files(httpx_mock, mock_boto3, mock_kafka_producer, mock_boto3_clients):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=any_code'
@@ -32,7 +32,7 @@ async def test_download_client_without_files(httpx_mock, mock_boto3):
     )
 
     download_client = await create_dataset_download_client(
-        auth_token={'at': 'token', 'rt': 'refresh_token'},
+        boto3_clients=mock_boto3_clients,
         operator='me',
         container_code='any_code',
         container_id='fake_id',
@@ -43,7 +43,7 @@ async def test_download_client_without_files(httpx_mock, mock_boto3):
     assert len(download_client.files_to_zip) == 0
 
 
-async def test_download_client_add_file(httpx_mock):
+async def test_download_client_add_file(httpx_mock, mock_boto3, mock_kafka_producer, mock_boto3_clients):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=any_code'
@@ -67,7 +67,7 @@ async def test_download_client_add_file(httpx_mock):
     )
 
     download_client = await create_dataset_download_client(
-        auth_token={'at': 'token', 'rt': 'refresh_token'},
+        boto3_clients=mock_boto3_clients,
         operator='me',
         container_code='any_code',
         container_id='fake_id',
@@ -79,7 +79,7 @@ async def test_download_client_add_file(httpx_mock):
     assert download_client.files_to_zip[0].get('id') == 'geid_1'
 
 
-async def test_download_dataset_add_schemas(httpx_mock):
+async def test_download_dataset_add_schemas(httpx_mock, mock_boto3, mock_kafka_producer, mock_boto3_clients):
     httpx_mock.add_response(
         method='GET',
         url='http://metadata_service/v1/items/search/?container_code=any_code'
@@ -89,7 +89,7 @@ async def test_download_dataset_add_schemas(httpx_mock):
     )
 
     download_client = await create_dataset_download_client(
-        auth_token={'at': 'token', 'rt': 'refresh_token'},
+        boto3_clients=mock_boto3_clients,
         operator='me',
         container_code='any_code',
         container_id='fake_id',

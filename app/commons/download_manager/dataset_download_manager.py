@@ -15,10 +15,11 @@
 
 import json
 from datetime import datetime
-from typing import Any, Dict
+from typing import Dict
 
 import aiofiles.os
 import httpx
+from common.object_storage_adaptor.boto3_client import Boto3Client
 
 from app.commons.download_manager.file_download_manager import FileDownloadClient
 from app.commons.kafka_producer import get_kafka_producer
@@ -31,7 +32,7 @@ DATASET_MESSAGE_SCHEMA = 'dataset.activity.avsc'
 
 
 async def create_dataset_download_client(
-    auth_token: Dict[str, Any],
+    boto3_clients: Dict[str, Boto3Client],
     operator: str,
     container_code: str,
     container_id: str,
@@ -59,7 +60,6 @@ async def create_dataset_download_client(
     '''
 
     download_client = DatasetDownloadClient(
-        auth_token=auth_token,
         operator=operator,
         container_code=container_code,
         container_id=container_id,
@@ -68,6 +68,8 @@ async def create_dataset_download_client(
     )
 
     await download_client.add_files_to_list(container_code)
+    # use the private domain for dataset download
+    await download_client._set_connection(boto3_clients.get('boto3_internal'))
 
     return download_client
 
@@ -75,7 +77,7 @@ async def create_dataset_download_client(
 class DatasetDownloadClient(FileDownloadClient):
     def __init__(
         self,
-        auth_token: Dict[str, Any],
+        # auth_token: Dict[str, Any],
         operator: str,
         container_code: str,
         container_id: str,
@@ -83,7 +85,7 @@ class DatasetDownloadClient(FileDownloadClient):
         session_id: str,
     ):
         super().__init__(
-            auth_token,
+            # auth_token,
             operator,
             container_code,
             container_type,
@@ -92,6 +94,16 @@ class DatasetDownloadClient(FileDownloadClient):
         )
 
         self.container_id = container_id
+
+    async def _set_connection(self, boto3_client: Boto3Client):
+        '''
+        Summary:
+            The dataset connection will be alway private domain
+        '''
+
+        self.boto3_client = boto3_client
+
+        return
 
     async def add_schemas(self, dataset_geid: str) -> None:
         '''

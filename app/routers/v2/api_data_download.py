@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
 from typing import Optional, Union
 
 import httpx
@@ -60,6 +61,48 @@ class APIDataDownload:
     def __init__(self):
         self.__logger = LoggerFactory('api_data_download_v2').get_logger()
         self.project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        # here are something different with upload. This varible will have
+        # following structure: {"boto3_internal":<Boto3Client>, "boto3_public":<Boto3Client>}
+        # The reason is presigned url will require we initialize class
+        # with public domain so user can access with. However, some internal
+        # operations will go through the prive domain within cluster to boost performance
+        self.boto3_clients = self._connect_to_object_storage()
+
+    def _connect_to_object_storage(self):
+        '''
+        Summary:
+            Setup the two connection class:
+                - boto3_internal: use private domain
+                - boto3_public: use public domain
+        '''
+        loop = asyncio.new_event_loop()
+
+        self.__logger.info('Initialize the boto3 clients')
+        try:
+            boto3_internal = loop.run_until_complete(
+                get_boto3_client(
+                    ConfigClass.MINIO_ENDPOINT,
+                    access_key=ConfigClass.MINIO_ACCESS_KEY,
+                    secret_key=ConfigClass.MINIO_SECRET_KEY,
+                    https=ConfigClass.MINIO_HTTPS,
+                )
+            )
+
+            boto3_public = loop.run_until_complete(
+                get_boto3_client(
+                    ConfigClass.MINIO_PUBLIC_URL,
+                    access_key=ConfigClass.MINIO_ACCESS_KEY,
+                    secret_key=ConfigClass.MINIO_SECRET_KEY,
+                    https=ConfigClass.MINIO_PUBLIC_HTTPS,
+                )
+            )
+        except Exception as e:
+            error_msg = str(e)
+            self.__logger.error('Fail to create connection with boto3: %s', error_msg)
+            raise e
+
+        loop.close()
+        return {'boto3_internal': boto3_internal, 'boto3_public': boto3_public}
 
     @router.post(
         '/download/pre/',
@@ -73,8 +116,6 @@ class APIDataDownload:
         self,
         data: PreDataDownloadPOST,
         background_tasks: BackgroundTasks,
-        authorization: Optional[str] = Header(None),
-        refresh_token: Optional[str] = Header(None),
         sessionId: str = Cookie(None),
     ) -> JSONResponse:
         '''
@@ -106,10 +147,6 @@ class APIDataDownload:
 
         self.__logger.info('Recieving request on /download/pre/')
         response = APIResponse()
-        minio_token = {
-            'at': authorization,
-            'rt': refresh_token,
-        }
 
         # check the container exist
         self.__logger.info(f'Check container: {data.container_type} {data.container_code}.')
@@ -152,7 +189,7 @@ class APIDataDownload:
             self.__logger.info('Initialize the data download client')
             download_client = await create_file_download_client(
                 data.files,
-                minio_token,
+                self.boto3_clients,
                 data.operator,
                 data.container_code,
                 data.container_type,
@@ -188,8 +225,6 @@ class APIDataDownload:
         self,
         data: DatasetPrePOST,
         background_tasks: BackgroundTasks,
-        authorization: Optional[str] = Header(None),
-        refresh_token: Optional[str] = Header(None),
         sessionId: str = Cookie(None),
     ) -> JSONResponse:
 
@@ -217,12 +252,8 @@ class APIDataDownload:
 
         self.__logger.info('Recieving request on /dataset/download/pre')
         api_response = APIResponse()
-        minio_token = {
-            'at': authorization,
-            'rt': refresh_token,
-        }
 
-        # TODO somehow check the dataset exist after migration
+        # check the dataset exist
         node_query_url = ConfigClass.DATASET_SERVICE + 'dataset-peek/' + data.dataset_code
         with httpx.Client() as client:
             response = client.get(node_query_url)
@@ -230,7 +261,7 @@ class APIDataDownload:
 
         self.__logger.info('Initialize the dataset download client')
         download_client = await create_dataset_download_client(
-            minio_token,
+            self.boto3_clients,
             data.operator,
             data.dataset_code,
             dataset_id,
@@ -283,6 +314,8 @@ class APIDataDownload:
 
         try:
             self.__logger.info('Generate presigned url')
+            # here is a special case that we generate presigned url
+            # without going through the bff. so I use the token to generate
             boto3_client = await get_boto3_client(
                 ConfigClass.MINIO_PUBLIC_URL, token=authorization, https=ConfigClass.MINIO_PUBLIC_HTTPS
             )

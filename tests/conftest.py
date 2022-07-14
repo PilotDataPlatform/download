@@ -261,6 +261,16 @@ def mock_boto3(monkeypatch):
 
 
 @pytest.fixture
+def mock_boto3_clients():
+    from common.object_storage_adaptor.boto3_client import Boto3Client
+
+    boto3_internal = Boto3Client('test_connection', access_key='test', secret_key='test')
+    boto3_public = Boto3Client('test_connection', access_key='test', secret_key='test')
+
+    return {'boto3_internal': boto3_internal, 'boto3_public': boto3_public}
+
+
+@pytest.fixture
 def mock_kafka_producer(monkeypatch):
     from app.commons.kafka_producer import KakfaProducer
 
@@ -283,7 +293,7 @@ def mock_kafka_producer(monkeypatch):
 
 
 @pytest.fixture
-async def fake_job(monkeypatch):
+async def fake_job():
     from app.resources.helpers import set_status
 
     await set_status(
