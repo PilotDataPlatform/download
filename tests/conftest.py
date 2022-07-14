@@ -264,10 +264,10 @@ def mock_boto3(monkeypatch):
 def mock_boto3_clients():
     from common.object_storage_adaptor.boto3_client import Boto3Client
 
-    boto3 = Boto3Client('test_connection', access_key='test', secret_key='test')
+    boto3_internal = Boto3Client('test_connection', access_key='test', secret_key='test')
     boto3_public = Boto3Client('test_connection', access_key='test', secret_key='test')
 
-    return {'boto3': boto3, 'boto3_public': boto3_public}
+    return {'boto3_internal': boto3_internal, 'boto3_public': boto3_public}
 
 
 @pytest.fixture

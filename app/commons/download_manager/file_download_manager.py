@@ -60,7 +60,7 @@ async def create_file_download_client(
     Parameter:
         - files(list): the list of file will be added into object
         - boto3_clients(dict of Boto3Client):
-            - boto3: the instance of boto3client with private domain
+            - boto3_internal: the instance of boto3client with private domain
             - boto3_public: the instance of boto3client with public domain
         - operator(string): the user who takes the operation
         - container_code(string): the unique code for project/dataset
@@ -137,10 +137,14 @@ class FileDownloadClient:
             if number of file is 1 without any folder, the boto3_client
             will use the instance with private domain. Otherwise, it will
             use the public domain
+        Parameter:
+            - boto3_clients(dict of Boto3Client):
+                - boto3_internal: the instance of boto3client with private domain
+                - boto3_public: the instance of boto3client with public domain
         '''
 
         if self.folder_download or len(self.files_to_zip) > 1:
-            self.boto3_client = boto3_clients.get('boto3')
+            self.boto3_client = boto3_clients.get('boto3_internal')
         else:
             self.boto3_client = boto3_clients.get('boto3_public')
 

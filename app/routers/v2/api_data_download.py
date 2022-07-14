@@ -62,7 +62,7 @@ class APIDataDownload:
         self.__logger = LoggerFactory('api_data_download_v2').get_logger()
         self.project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         # here are something different with upload. This varible will have
-        # following structure: {"boto3":<Boto3Client>, "boto3_public":<Boto3Client>}
+        # following structure: {"boto3_internal":<Boto3Client>, "boto3_public":<Boto3Client>}
         # The reason is presigned url will require we initialize class
         # with public domain so user can access with. However, some internal
         # operations will go through the prive domain within cluster to boost performance
@@ -72,14 +72,14 @@ class APIDataDownload:
         '''
         Summary:
             Setup the two connection class:
-                - boto3: use private domain
+                - boto3_internal: use private domain
                 - boto3_public: use public domain
         '''
         loop = asyncio.new_event_loop()
 
         self.__logger.info('Initialize the boto3 clients')
         try:
-            boto3 = loop.run_until_complete(
+            boto3_internal = loop.run_until_complete(
                 get_boto3_client(
                     ConfigClass.MINIO_ENDPOINT,
                     access_key=ConfigClass.MINIO_ACCESS_KEY,
@@ -90,10 +90,10 @@ class APIDataDownload:
 
             boto3_public = loop.run_until_complete(
                 get_boto3_client(
-                    ConfigClass.MINIO_ENDPOINT,
+                    ConfigClass.MINIO_PUBLIC_URL,
                     access_key=ConfigClass.MINIO_ACCESS_KEY,
                     secret_key=ConfigClass.MINIO_SECRET_KEY,
-                    https=ConfigClass.MINIO_HTTPS,
+                    https=ConfigClass.MINIO_PUBLIC_HTTPS,
                 )
             )
         except Exception as e:
@@ -102,7 +102,7 @@ class APIDataDownload:
             raise e
 
         loop.close()
-        return {'boto3': boto3, 'boto3_public': boto3_public}
+        return {'boto3_internal': boto3_internal, 'boto3_public': boto3_public}
 
     @router.post(
         '/download/pre/',

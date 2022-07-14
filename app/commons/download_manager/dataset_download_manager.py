@@ -69,7 +69,7 @@ async def create_dataset_download_client(
 
     await download_client.add_files_to_list(container_code)
     # use the private domain for dataset download
-    await download_client._set_connection(boto3_clients.get('boto3'))
+    await download_client._set_connection(boto3_clients.get('boto3_internal'))
 
     return download_client
 
