@@ -28,7 +28,7 @@ jobs:
         run: |
           sleep 10
           curl --silent -o output.json --user jenkins:${{ secrets.JENKINS_API_TOKEN }} -X GET "${{ env.location_link }}"
-      - name: greenroom download getting the build number
+      - name: getting the build number
         uses: sergeysova/jq-action@v2
         id: build_number
         with:
@@ -56,14 +56,6 @@ jobs:
         run: |
           sleep 10
           curl --silent -o output.json --user jenkins:${{ secrets.JENKINS_API_TOKEN }} -X GET "${{ env.location_link }}"
-      - name: getting the build number
-        uses: sergeysova/jq-action@v2
-        id: build_number
-        with:
-          cmd: |
-            cd /github/workspace
-            build_num=$(jq .executable.number output.json -r)
-            echo $build_num && echo "build_number=$build_num" >> $GITHUB_ENV
       - name: core download getting the result of the pipeline
         run: |
          timer=0;
