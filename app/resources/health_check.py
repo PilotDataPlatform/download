@@ -18,6 +18,7 @@ from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.commons.data_providers.redis import SrvRedisSingleton
+from app.commons.kafka_producer import get_kafka_producer
 from app.config import ConfigClass
 
 
@@ -49,7 +50,7 @@ async def check_minio() -> bool:
         For more infomation, check document:
         https://github.com/minio/minio/blob/master/docs/metrics/healthcheck/README.md
     Return:
-        - {"Redis": status}
+        - {"Minio": status}
     """
 
     http_protocal = 'https://' if ConfigClass.S3_INTERNAL_HTTPS else 'http://'
@@ -68,6 +69,13 @@ async def check_minio() -> bool:
 
 
 async def check_RDS():
+    """
+    Summary:
+        the function is to if target database table is
+        created
+    Return:
+        - {"RDS": status}
+    """
 
     try:
         engine = create_async_engine(ConfigClass.RDS_DB_URI)
@@ -81,3 +89,20 @@ async def check_RDS():
             raise ValueError('RDS table approval_entity not found')
     except Exception as e:
         return {'RDS': 'Fail with error: %s' % (str(e))}
+
+
+async def check_kafka():
+    """
+    Summary:
+        the function is to check if kafka is available.
+        this will just check if we successfully init the
+        kafka producer
+    Return:
+        - {"Kafka": status}
+    """
+
+    kafka_connection = await get_kafka_producer()
+    if kafka_connection.connected is False:
+        return {'Kafka': 'Unavailable'}
+
+    return {'Kafka': 'Online'}

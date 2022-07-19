@@ -16,7 +16,7 @@
 from fastapi import FastAPI
 from fastapi_health import health
 
-from app.resources.health_check import check_minio, check_RDS, check_redis
+from app.resources.health_check import check_kafka, check_minio, check_RDS, check_redis
 from app.routers import api_root
 from app.routers.v1 import api_data_download
 from app.routers.v2 import api_data_download as api_data_download_v2
@@ -29,7 +29,7 @@ def api_registry(app: FastAPI):
 
     app.add_api_route(
         '/v1/health',
-        health([check_redis, check_minio, check_RDS]),
+        health([check_redis, check_minio, check_RDS, check_kafka]),
         tags=['Health'],
         summary='Health check for RDS and Redis',
     )
