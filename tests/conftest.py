@@ -60,6 +60,12 @@ environ['REDIS_PORT'] = '6379'
 environ['REDIS_DB'] = '0'
 environ['REDIS_PASSWORD'] = ''
 
+environ['RDS_HOST'] = 'localhost'
+environ['RDS_PORT'] = '6379'
+environ['RDS_PWD'] = 'test'
+environ['RDS_SCHEMA_DEFAULT'] = ''
+environ['RDS_USER'] = 'test'
+
 environ['RDS_DB_URI'] = 'postgresql://postgres:postgres@127.0.0.1:5432/INDOC_TEST'
 environ['RDS_SCHEMA_DEFAULT'] = 'INDOC_TEST'
 environ['ROOT_PATH'] = './tests/'
