@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     MINIO_PUBLIC_HTTPS: bool = True
 
     # download secret
-    DOWNLOAD_KEY: str = 'indoc101'
+    DOWNLOAD_KEY: str
     DOWNLOAD_TOKEN_EXPIRE_AT: int = 86400
 
     # Redis Service
