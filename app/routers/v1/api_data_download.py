@@ -36,8 +36,6 @@ from app.resources.error_handler import (
 )
 from app.resources.helpers import get_status, set_status
 
-# from app.resources.helpers import update_file_operation_logs
-
 router = APIRouter()
 
 _API_TAG = 'v1/data-download'

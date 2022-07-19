@@ -36,37 +36,31 @@ def load_vault_settings(settings: BaseSettings) -> Dict[str, Any]:
 class Settings(BaseSettings):
     """Store service configuration settings."""
 
-    APP_NAME: str = 'service_download'
-    VERSION: str = '0.1.0'
+    APP_NAME: str = 'DOWNLOAD_SERVICE'
+    VERSION: str = '1.1.0'
     port: int = 5077
     host: str = '127.0.0.1'
     env: str = 'test'
-    namespace: str = ''
+    namespace: str
 
     # disk mounts
     ROOT_PATH: str
-
     CORE_ZONE_LABEL: str
     GREEN_ZONE_LABEL: str
 
     # services
-    PROVENANCE_SERVICE: str
-    QUEUE_SERVICE: str
-    UTILITY_SERVICE: str
-    DATA_OPS_UTIL: str
+    DATAOPS_SERVICE: str
     DATASET_SERVICE: str
     METADATA_SERVICE: str
     PROJECT_SERVICE: str
 
     # minio
-    MINIO_OPENID_CLIENT: str
     # this endpoint is internal communication
     MINIO_ENDPOINT: str
     MINIO_HTTPS: bool = False
-    KEYCLOAK_URL: str
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
-    KEYCLOAK_MINIO_SECRET: str
+    # this is for presigned url
     MINIO_PUBLIC_URL: str
     # by default the minio public will be https
     # for local testing add the one to .env as False
@@ -75,6 +69,7 @@ class Settings(BaseSettings):
     # download secret
     DOWNLOAD_KEY: str = 'indoc101'
     DOWNLOAD_TOKEN_EXPIRE_AT: int = 86400
+
     # Redis Service
     REDIS_HOST: str
     REDIS_PORT: int
@@ -83,8 +78,14 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str
 
     # Postgres
-    RDS_DB_URI: str
+    # TODO remove it after add approval service
+    # RDS_DB_URI: str
+    # RDS_SCHEMA_DEFAULT: str
+    RDS_HOST: str
+    RDS_PORT: int
+    RDS_PWD: str
     RDS_SCHEMA_DEFAULT: str
+    RDS_USER: str
 
     # kafka
     KAFKA_URL: str
@@ -108,18 +109,19 @@ class Settings(BaseSettings):
         super().__init__()
 
         # services
-        self.PROVENANCE_SERVICE += '/v1/'
-        self.QUEUE_SERVICE += '/v1/'
-        self.DATA_OPS_UT_V2 = self.DATA_OPS_UTIL + '/v2/'
-        self.DATA_OPS_UTIL += '/v1/'
-        self.DATASET_SERVICE += '/v1/'
-        self.METADATA_SERVICE += '/v1/'
+        self.DATAOPS_SERVICE_V2 = self.DATAOPS_SERVICE + '/v2/'
+        self.DATAOPS_SERVICE = self.DATAOPS_SERVICE + '/v1/'
+        self.DATASET_SERVICE = self.DATASET_SERVICE + '/v1/'
+        self.METADATA_SERVICE = self.METADATA_SERVICE + '/v1/'
 
         # minio
         self.MINIO_TMP_PATH = self.ROOT_PATH + '/tmp/'
 
         # postgres
-        self.RDS_DB_URI = self.RDS_DB_URI.replace('postgresql', 'postgresql+asyncpg')
+        self.RDS_DB_URI = (
+            f'postgresql+asyncpg://{self.RDS_USER}:{self.RDS_PWD}@{self.RDS_HOST}:'
+            + f'{self.RDS_PORT}/{self.RDS_SCHEMA_DEFAULT}'
+        )
         # redis
         self.REDIS_URL = (
             f'redis://{self.REDIS_USER}:{self.REDIS_PASSWORD}@{self.REDIS_HOST}' + f':{self.REDIS_PORT}/{self.REDIS_DB}'

@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-import os
 import time
 from typing import List
 from uuid import UUID
@@ -171,42 +170,3 @@ async def get_status(session_id: str, job_id: str, project_code: str, action: st
         my_key = 'dataaction:{}:Container:{}:{}:{}:{}'.format(session_id, job_id, action, project_code, operator)
     res_binary = await srv_redis.mget_by_prefix(my_key)
     return [json.loads(record.decode('utf-8')) for record in res_binary] if res_binary else []
-
-
-async def update_file_operation_logs(
-    operator: str, download_path: str, project_code: str, operation_type: str = 'data_download', extra: dict = None
-) -> dict:
-    '''
-    Summary:
-        The function will fetch the existing job from redis by the input.
-        Return empty list if job does not exist
-
-    Parameter:
-        - operator(str): the user who takes current action
-        - download_path(str): the location of file or zipped file path
-        - project_code(str): the unique code of project
-        - operation_type(str) default='data_download': in download service
-            this will be marked as data_download
-        - extra(dict) default=None: the field for extra info
-
-    Return:
-        - dict: the detail job info
-    '''
-
-    url_audit_log = ConfigClass.PROVENANCE_SERVICE + 'audit-logs'
-    payload = {
-        'action': operation_type,
-        'operator': operator,
-        'target': download_path,
-        'outcome': download_path,
-        'resource': 'file',
-        'display_name': os.path.basename(download_path),
-        'project_code': project_code,
-        'extra': extra if extra else {},
-    }
-    async with httpx.AsyncClient() as client:
-        res = await client.post(url_audit_log, json=payload)
-
-        if res.status_code != 200:
-            raise Exception('Erorr when create autid log: %s' % (str(res.text)))
-    return res.json()
