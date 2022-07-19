@@ -52,8 +52,8 @@ async def check_minio() -> bool:
         - {"Redis": status}
     """
 
-    http_protocal = 'https://' if ConfigClass.MINIO_HTTPS else 'http://'
-    url = http_protocal + ConfigClass.MINIO_ENDPOINT + '/minio/health/cluster'
+    http_protocal = 'https://' if ConfigClass.S3_INTERNAL_HTTPS else 'http://'
+    url = http_protocal + ConfigClass.S3_INTERNAL + '/minio/health/cluster'
 
     try:
         async with httpx.AsyncClient() as client:

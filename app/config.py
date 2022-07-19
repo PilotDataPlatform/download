@@ -56,15 +56,15 @@ class Settings(BaseSettings):
 
     # minio
     # this endpoint is internal communication
-    MINIO_ENDPOINT: str
-    MINIO_HTTPS: bool = False
-    MINIO_ACCESS_KEY: str
-    MINIO_SECRET_KEY: str
+    S3_INTERNAL: str
+    S3_INTERNAL_HTTPS: bool = False
+    S3_ACCESS_KEY: str
+    S3_SECRET_KEY: str
     # this is for presigned url
-    MINIO_PUBLIC_URL: str
+    S3_PUBLIC: str
     # by default the minio public will be https
     # for local testing add the one to .env as False
-    MINIO_PUBLIC_HTTPS: bool = True
+    S3_PUBLIC_HTTPS: bool = True
 
     # download secret
     DOWNLOAD_KEY: str
