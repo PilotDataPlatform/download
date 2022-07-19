@@ -84,8 +84,9 @@ class Settings(BaseSettings):
     RDS_HOST: str
     RDS_PORT: int
     RDS_PWD: str
-    RDS_SCHEMA_DEFAULT: str
     RDS_USER: str
+    RDS_DBNAME: str
+    RDS_SCHEMA_DEFAULT: str
 
     # kafka
     KAFKA_URL: str
@@ -120,7 +121,7 @@ class Settings(BaseSettings):
         # postgres
         self.RDS_DB_URI = (
             f'postgresql+asyncpg://{self.RDS_USER}:{self.RDS_PWD}@{self.RDS_HOST}:'
-            + f'{self.RDS_PORT}/{self.RDS_SCHEMA_DEFAULT}'
+            + f'{self.RDS_PORT}/{self.RDS_DBNAME}'
         )
         # redis
         self.REDIS_URL = (
