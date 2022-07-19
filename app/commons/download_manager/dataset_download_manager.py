@@ -77,7 +77,6 @@ async def create_dataset_download_client(
 class DatasetDownloadClient(FileDownloadClient):
     def __init__(
         self,
-        # auth_token: Dict[str, Any],
         operator: str,
         container_code: str,
         container_id: str,
@@ -85,7 +84,6 @@ class DatasetDownloadClient(FileDownloadClient):
         session_id: str,
     ):
         super().__init__(
-            # auth_token,
             operator,
             container_code,
             container_type,
