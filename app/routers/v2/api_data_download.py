@@ -196,10 +196,15 @@ class APIDataDownload:
                 sessionId,
                 file_geids_to_include,
             )
+
+            download_client.logger.info('generate hash token')
             hash_code = await download_client.generate_hash_code()
+
+            download_client.logger.info('Init the download job status')
             status_result = await download_client.set_status(
                 EDataDownloadStatus.ZIPPING, payload={'hash_code': hash_code}
             )
+
             download_client.logger.info(
                 f'Starting background job for: {data.container_code}.'
                 f'number of files {len(download_client.files_to_zip)}'
