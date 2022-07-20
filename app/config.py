@@ -87,6 +87,7 @@ class Settings(BaseSettings):
     RDS_SCHEMA_DEFAULT: str
 
     # kafka
+    # NOTE: KAFKA URL cannot start with http://
     KAFKA_URL: str
     KAFKA_ITEM_ACTIVITY_TOPIC: str = 'metadata.items.activity'
     KAFKA_DATASET_ACTIVITY_TOPIC: str = 'dataset.activity'
