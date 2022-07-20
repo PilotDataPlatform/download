@@ -81,19 +81,19 @@ class APIDataDownload:
         try:
             boto3_internal = loop.run_until_complete(
                 get_boto3_client(
-                    ConfigClass.MINIO_ENDPOINT,
-                    access_key=ConfigClass.MINIO_ACCESS_KEY,
-                    secret_key=ConfigClass.MINIO_SECRET_KEY,
-                    https=ConfigClass.MINIO_HTTPS,
+                    ConfigClass.S3_INTERNAL,
+                    access_key=ConfigClass.S3_ACCESS_KEY,
+                    secret_key=ConfigClass.S3_SECRET_KEY,
+                    https=ConfigClass.S3_INTERNAL_HTTPS,
                 )
             )
 
             boto3_public = loop.run_until_complete(
                 get_boto3_client(
-                    ConfigClass.MINIO_PUBLIC_URL,
-                    access_key=ConfigClass.MINIO_ACCESS_KEY,
-                    secret_key=ConfigClass.MINIO_SECRET_KEY,
-                    https=ConfigClass.MINIO_PUBLIC_HTTPS,
+                    ConfigClass.S3_PUBLIC,
+                    access_key=ConfigClass.S3_ACCESS_KEY,
+                    secret_key=ConfigClass.S3_SECRET_KEY,
+                    https=ConfigClass.S3_PUBLIC_HTTPS,
                 )
             )
         except Exception as e:
@@ -317,7 +317,7 @@ class APIDataDownload:
             # here is a special case that we generate presigned url
             # without going through the bff. so I use the token to generate
             boto3_client = await get_boto3_client(
-                ConfigClass.MINIO_PUBLIC_URL, token=authorization, https=ConfigClass.MINIO_PUBLIC_HTTPS
+                ConfigClass.S3_PUBLIC, token=authorization, https=ConfigClass.S3_PUBLIC_HTTPS
             )
             presigned_url = await boto3_client.get_download_presigned_url(bucket, file_path)
 

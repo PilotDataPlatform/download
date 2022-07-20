@@ -18,7 +18,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.instrumentation.asyncpg import AsyncPGInstrumentor
+
+# from opentelemetry.instrumentation.asyncpg import AsyncPGInstrumentor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
@@ -73,7 +74,7 @@ def instrument_app(app: FastAPI) -> None:
 
     FastAPIInstrumentor.instrument_app(app)
     HTTPXClientInstrumentor().instrument()
-    AsyncPGInstrumentor().instrument()
+    # AsyncPGInstrumentor().instrument()
 
     jaeger_exporter = JaegerExporter(
         agent_host_name=ConfigClass.OPEN_TELEMETRY_HOST, agent_port=ConfigClass.OPEN_TELEMETRY_PORT

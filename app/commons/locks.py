@@ -42,7 +42,7 @@ async def bulk_lock_operation(resource_key: list, operation: str, lock: bool = T
     method = 'POST' if lock else 'DELETE'
 
     # operation can be either read or write
-    url = ConfigClass.DATA_OPS_UT_V2 + 'resource/lock/bulk'
+    url = ConfigClass.DATAOPS_SERVICE_V2 + 'resource/lock/bulk'
     post_json = {'resource_keys': resource_key, 'operation': operation}
     async with httpx.AsyncClient() as client:
         response = await client.request(method, url, json=post_json, timeout=3600)

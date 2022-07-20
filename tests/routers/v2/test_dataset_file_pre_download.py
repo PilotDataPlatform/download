@@ -51,8 +51,10 @@ async def test_v2_dataset_download_pre_return_200_when_success(
         },
     )
 
-    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
-    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(method='POST', url='http://dataops_service/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(
+        method='DELETE', url='http://dataops_service/v2/resource/lock/bulk', json={}, status_code=200
+    )
 
     mocker.patch(
         'app.commons.download_manager.dataset_download_manager.DatasetDownloadClient.add_schemas', return_value=[]
@@ -97,8 +99,10 @@ async def test_v2_dataset_download_pre_empty_dataset_return_200_when_success(
         json={'result': []},
     )
 
-    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
-    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(method='POST', url='http://dataops_service/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(
+        method='DELETE', url='http://dataops_service/v2/resource/lock/bulk', json={}, status_code=200
+    )
 
     mocker.patch(
         'app.commons.download_manager.dataset_download_manager.DatasetDownloadClient.add_schemas', return_value=[]

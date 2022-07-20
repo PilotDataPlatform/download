@@ -48,3 +48,6 @@ class SrvRedisSingleton:
         keys = await self.REDIS.keys(query)
         for key in keys:
             await self.REDIS.delete(key)
+
+    async def ping(self):
+        return await self.REDIS.ping()

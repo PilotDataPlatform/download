@@ -95,8 +95,10 @@ async def test_zip_worker_set_status_READY_FOR_DOWNLOADING_when_success(
         },
     )
 
-    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
-    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(method='POST', url='http://dataops_service/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(
+        method='DELETE', url='http://dataops_service/v2/resource/lock/bulk', json={}, status_code=200
+    )
 
     download_client = await create_file_download_client(
         files=[{'id': 'geid_1'}],
@@ -139,8 +141,10 @@ async def test_zip_worker_set_status_CANCELLED_when_success(
     )
     m.side_effect = Exception('fail to download')
 
-    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
-    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(method='POST', url='http://dataops_service/v2/resource/lock/bulk', json={}, status_code=200)
+    httpx_mock.add_response(
+        method='DELETE', url='http://dataops_service/v2/resource/lock/bulk', json={}, status_code=200
+    )
 
     download_client = await create_file_download_client(
         files=[{'id': 'geid_1'}],
@@ -210,8 +214,10 @@ async def test_zip_worker_raise_exception_when_minio_return_error(
             }
         },
     )
-    httpx_mock.add_response(method='POST', url='http://data_ops_util/v2/resource/lock/bulk', status_code=200, json={})
-    httpx_mock.add_response(method='DELETE', url='http://data_ops_util/v2/resource/lock/bulk', status_code=200, json={})
+    httpx_mock.add_response(method='POST', url='http://dataops_service/v2/resource/lock/bulk', status_code=200, json={})
+    httpx_mock.add_response(
+        method='DELETE', url='http://dataops_service/v2/resource/lock/bulk', status_code=200, json={}
+    )
 
     m = mocker.patch('common.object_storage_adaptor.boto3_client.Boto3Client.downlaod_object', return_value=[])
     m.side_effect = minio.error.S3Error(

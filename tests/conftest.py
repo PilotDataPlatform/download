@@ -34,42 +34,6 @@ from starlette.config import environ
 from testcontainers.postgres import PostgresContainer
 from urllib3 import HTTPResponse
 
-environ['CONFIG_CENTER_ENABLED'] = 'false'
-
-environ['NEO4J_SERVICE'] = 'http://NEO4J_SERVICE'
-environ['METADATA_SERVICE'] = 'http://METADATA_SERVICE'
-environ['QUEUE_SERVICE'] = 'http://QUEUE_SERVICE'
-environ['PROVENANCE_SERVICE'] = 'http://PROVENANCE_SERVICE'
-environ['DATASET_SERVICE'] = 'http://DATASET_SERVICE'
-environ['UTILITY_SERVICE'] = 'http://UTILITY_SERVICE'
-environ['DATA_OPS_UTIL'] = 'http://DATA_OPS_UTIL'
-environ['PROJECT_SERVICE'] = 'http://PROJECT_SERVICE'
-environ['KAFKA_URL'] = 'http://KAFKA_URL'
-environ['MINIO_PUBLIC_URL'] = 'MINIO_PUBLIC_URL'
-
-environ['CORE_ZONE_LABEL'] = 'Core'
-environ['GREEN_ZONE_LABEL'] = 'Greenroom'
-environ['MINIO_OPENID_CLIENT'] = 'MINIO_OPENID_CLIENT'
-environ['MINIO_ENDPOINT'] = 'MINIO_ENDPOINT'
-environ['MINIO_HTTPS'] = 'false'
-environ['KEYCLOAK_URL'] = 'KEYCLOAK_URL'
-environ['MINIO_TEST_PASS'] = 'MINIO_TEST_PASS'
-environ['MINIO_ACCESS_KEY'] = 'MINIO_ACCESS_KEY'
-environ['MINIO_SECRET_KEY'] = 'MINIO_SECRET_KEY'
-environ['KEYCLOAK_MINIO_SECRET'] = 'KEYCLOAK_MINIO_SECRET'
-environ['DOWNLOAD_KEY'] = 'DOWNLOAD_KEY'
-
-environ['REDIS_HOST'] = 'localhost'
-environ['REDIS_PORT'] = '6379'
-environ['REDIS_DB'] = '0'
-environ['REDIS_PASSWORD'] = ''
-
-environ['RDS_DB_URI'] = 'postgresql://postgres:postgres@127.0.0.1:5432/INDOC_TEST'
-environ['RDS_SCHEMA_DEFAULT'] = 'INDOC_TEST'
-environ['ROOT_PATH'] = './tests/'
-
-environ['OPEN_TELEMETRY_ENABLED'] = 'false'
-
 
 @pytest.fixture(scope='session')
 def db_postgres():
