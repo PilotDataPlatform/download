@@ -121,6 +121,7 @@ class Settings(BaseSettings):
             f'postgresql+asyncpg://{self.RDS_USER}:{self.RDS_PWD}@{self.RDS_HOST}:'
             + f'{self.RDS_PORT}/{self.RDS_DBNAME}'
         )
+
         # redis
         self.REDIS_URL = (
             f'redis://{self.REDIS_USER}:{self.REDIS_PASSWORD}@{self.REDIS_HOST}' + f':{self.REDIS_PORT}/{self.REDIS_DB}'
