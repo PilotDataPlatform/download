@@ -79,8 +79,6 @@ class Settings(BaseSettings):
 
     # Postgres
     # TODO remove it after add approval service
-    # RDS_DB_URI: str
-    # RDS_SCHEMA_DEFAULT: str
     RDS_HOST: str
     RDS_PORT: int
     RDS_PWD: str
