@@ -1,3 +1,4 @@
+# PILOT
 # Copyright (C) 2022 Indoc Research
 #
 # This program is free software: you can redistribute it and/or modify
