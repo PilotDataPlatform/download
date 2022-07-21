@@ -62,13 +62,13 @@ async def metadata(engine):
         Column('entity_type', String()),
         Column('review_status', String()),
         Column('name', String()),
-        Column('entity_geid', String()),
+        Column('entity_id', String()),
     )
     async with engine.begin() as connection:
         await connection.run_sync(metadata.create_all)
         await connection.execute(
             table.insert().values(
-                request_id='67e6bf62-be82-4401-9ec0-7d49ee047fe7', name='entity_name', entity_geid='fake_geid'
+                request_id='67e6bf62-be82-4401-9ec0-7d49ee047fe7', name='entity_name', entity_id='fake_geid'
             )
         )
     yield metadata
