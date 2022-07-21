@@ -9,11 +9,7 @@ The upload service is one of the key component for PILOT project. It's built usi
 
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your service locally. To get a local copy up and
-running follow these simple example steps.
-
-The text in this section should either have some sane steps that user has to perform before proceeding to the next
-section, or it should be simply deleted to save user from a wall of text that in most cases people don't read.
+This is an example of how to run the download service locally
 
 ### Prerequisites
 
