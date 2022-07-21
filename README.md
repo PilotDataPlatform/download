@@ -5,94 +5,58 @@
 [![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/pilotdataplatform/download/CI/develop?style=for-the-badge)](https://github.com/PilotDataPlatform/download/actions/workflows/cicd.yml)
 [![codecov](https://img.shields.io/codecov/c/github/PilotDataPlatform/download?style=for-the-badge)](https://codecov.io/gh/PilotDataPlatform/download)
 
-This service is built for file data downloading purpose. It's built using the FastAPI python framework.
+The upload service is one of the key component for PILOT project. It's built using the FastAPI python framework. The main responsibility is to handle the file/folder download from [Minio](https://min.io/) Object Storage. If api reqeusts to download multiple files or folder, the service will combine them as the zip file.
 
-# About The Project
+## Getting Started
 
-The upload service is one of the component for PILOT project. The main responsibility is to handle the file/folder download from [Minio](https://min.io/) Object Storage. If api reqeusts to download multiple files or folder, the service will combine them as the zip file.
+This is an example of how to run the download service locally.
 
-## Built With
+### Prerequisites
 
- - [Minio](https://min.io/): The Object Storage to save the data
+This project is using [Poetry](https://python-poetry.org/docs/#installation) to handle the dependencies.
 
- - [Fastapi](https://fastapi.tiangolo.com): The async api framework for backend
+    curl -sSL https://install.python-poetry.org | python3 -
 
- - [poetry](https://python-poetry.org/): python package management
+### Installation & Quick Start
 
- - [docker](https://docker.com)
+1. Clone the project.
 
-# Getting Started
+       git clone https://github.com/PilotDataPlatform/download.git
 
+2. Install dependencies.
 
-## Prerequisites
+       poetry install
 
- 1. The project is using poetry to handle the package. **Note here the poetry must install globally not in the anaconda virtual environment**
+3. Install any OS level dependencies if needed.
 
- ```
- pip install poetry
- ```
+       apt install <required_package>
+       brew install <required_package>
 
- 2. add the precommit package:
+5. Add environment variables into `.env` in case it's needed. Use `.env.schema` as a reference.
 
- ```
- pip3 install pre_commit
- ```
+6. Run application.
 
-## Installation
+       poetry run python run.py
 
- 1. git clone the project:
- ```
- git clone https://github.com/PilotDataPlatform/download.git
- ```
+### Startup using Docker
 
- 2. install the package:
- ```
- poetry install
- ```
+This project can also be started using [Docker](https://www.docker.com/get-started/).
 
- 3. create the `.env` file from `.env.schema`
+1. To build and start the service within the Docker container, run:
 
- 4. run it locally:
- ```
- poetry run python run.py
- ```
+       docker compose up
 
-## Docker
+## Resources
 
-To package up the service into docker pod, running following command:
+* [Pilot Platform API Documentation](https://pilotdataplatform.github.io/api-docs/)
+* [Pilot Platform Helm Charts](https://github.com/PilotDataPlatform/helm-charts/tree/main/download-service)
 
-```
-docker build .
-```
+## Contribution
 
-## API Documents
+You can contribute the project in following ways:
 
-REST API documentation in the form of Swagger/OpenAPI can be found here: [Api Document](https://pilotdataplatform.github.io/api-docs/)
-
-## Helm Charts
-
-Components of the Pilot Platform are available as helm charts for installation on Kubernetes: [Download Service Helm Charts](https://github.com/PilotDataPlatform/helm-charts/tree/main/download-service)
-
-
-# Colaboration
-
-## Run tests
-
-The test will require to start a test redis (without a password TESTONLY)
-
-```
-docker start test-redis || docker run --name test-redis -p 6379:6379 -d redis
-```
-
-To run pytest with coverage rum
-
-```
-make test
-```
-
-To run only pytest without coverage:
-
-```
-poetry run pytest
-```
-
+* Report a bug.
+* Suggest a feature.
+* Open a pull request for fixing issues or adding functionality. Please consider
+  using [pre-commit](https://pre-commit.com) in this case.
+* For general guidelines on how to contribute to the project, please take a look at the [contribution guides](CONTRIBUTING.md).
