@@ -43,10 +43,10 @@ class ApprovalEntity(BaseModel):
 
     id: UUID
     request_id: Optional[UUID]
-    entity_geid: Optional[str]
+    entity_id: Optional[str]
     entity_type: Optional[EntityType]
     review_status: Optional[ReviewStatus]
-    parent_geid: Optional[str]
+    parent_id: Optional[str]
     copy_status: Optional[CopyStatus]
     name: str
 
@@ -63,6 +63,6 @@ class ApprovalEntities(dict):
         instance = cls()
         for entity in result:
             approval_entity = ApprovalEntity.from_orm(entity)
-            instance[approval_entity.entity_geid] = approval_entity
+            instance[approval_entity.entity_id] = approval_entity
 
         return instance
