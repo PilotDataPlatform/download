@@ -36,7 +36,7 @@ This project is using [Poetry](https://python-poetry.org/docs/#installation) to 
 
 6. Run application.
 
-       poetry run python start.py
+       poetry run python run.py
 
 ### Startup using Docker
 
