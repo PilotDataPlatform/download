@@ -9,7 +9,7 @@ The upload service is one of the key component for PILOT project. It's built usi
 
 ## Getting Started
 
-This is an example of how to run the download service locally
+This is an example of how to run the download service locally.
 
 ### Prerequisites
 
