@@ -36,10 +36,11 @@ async def check_redis() -> dict:
     try:
         redis_client = SrvRedisSingleton()
         if await redis_client.ping():
-            return {'Redis': 'Online'}
+            return True
         else:
-            return {'Redis': 'Fail'}
+            return False
     except Exception as e:
+        return False
         return {'Redis': 'Fail with error: %s' % (str(e))}
 
 
@@ -62,11 +63,13 @@ async def check_minio() -> bool:
             res = await client.get(url)
 
             if res.status_code != 200:
+                return False
                 return {'Minio': 'Cluster unavailable'}
     except Exception as e:
+        return False
         return {'Minio': 'Fail with error: %s' % (str(e))}
 
-    return {'Minio': 'Online'}
+    return True
 
 
 async def check_RDS():
@@ -85,10 +88,13 @@ async def check_RDS():
             await conn.run_sync(metadata.reflect, only=['approval_entity'])
 
         if metadata.tables:
+            return True
             return {'RDS': 'Online'}
         else:
+            return False
             raise ValueError('RDS table approval_entity not found')
     except Exception as e:
+        return False
         return {'RDS': 'Fail with error: %s' % (str(e))}
 
 
@@ -104,6 +110,7 @@ async def check_kafka():
 
     kafka_connection = await get_kafka_producer()
     if kafka_connection.connected is False:
+        return False
         return {'Kafka': 'Unavailable'}
 
-    return {'Kafka': 'Online'}
+    return True

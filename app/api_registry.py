@@ -30,7 +30,7 @@ def api_registry(app: FastAPI):
 
     app.add_api_route(
         '/v1/health',
-        health([check_redis, check_minio, check_RDS, check_kafka]),
+        health(conditions=[check_redis, check_minio, check_RDS, check_kafka], success_status=204),
         tags=['Health'],
         summary='Health check for RDS and Redis',
     )
